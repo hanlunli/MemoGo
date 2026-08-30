@@ -13,6 +13,12 @@ from agents.cognitive_brain_training import CognitiveBrainTrainingAgent
 from agents.cognitive_brain_training import DiseaseStage as CognitiveDiseaseStage
 from agents.cognitive_brain_training import PatientProfile as CognitivePatientProfile
 from agents.cognitive_brain_training.llm_logging import configure_logging as configure_cognitive_logging
+from agents.daily_life_routine_management import DailyLifeRoutineManagementAgent, DeviationEvent, DeviationType
+from agents.daily_life_routine_management import DiseaseStage as DailyLifeDiseaseStage
+from agents.daily_life_routine_management import MobilityLevel as DailyLifeMobilityLevel
+from agents.daily_life_routine_management import PatientProfile as DailyLifePatientProfile
+from agents.daily_life_routine_management.llm_logging import configure_logging as configure_daily_life_logging
+from agents.daily_life_routine_management.models import CheckpointType
 from agents.exercise_motor_coordination_training import ExerciseMotorCoordinationTrainingAgent, MobilityLevel
 from agents.exercise_motor_coordination_training import DiseaseStage as ExerciseDiseaseStage
 from agents.exercise_motor_coordination_training import PatientProfile as ExercisePatientProfile
@@ -34,6 +40,7 @@ configure_exercise_logging()
 configure_adl_logging()
 configure_social_logging()
 configure_home_safety_logging()
+configure_daily_life_logging()
 
 AGENT_LABELS = {
     "cognitive": "🧠 Cognitive & Brain Training",
@@ -41,6 +48,7 @@ AGENT_LABELS = {
     "adl": "🧺 Activities of Daily Living (ADL) Training",
     "social": "🎨 Social & Creative Engagement Training",
     "home_safety": "🏠 Home Safety & Protection",
+    "daily_life": "📅 Daily Life & Routine Management",
 }
 
 COGNITIVE_SCHEDULE_OPTIONS = [
@@ -66,6 +74,14 @@ SOCIAL_SCHEDULE_OPTIONS = [
 
 HOME_SAFETY_SCHEDULE_OPTIONS = [
     "09:00-09:30 Weekly home safety walkthrough",
+]
+
+DAILY_LIFE_SCHEDULE_OPTIONS = [
+    "07:30-08:30 Morning routine, hygiene & breakfast",
+    "11:30-13:00 Lunch & midday rest",
+    "14:00 Midday medication reminder",
+    "16:30-18:00 Relaxation & dinner",
+    "19:30-21:30 Bedtime prep & relaxation",
 ]
 
 STAGE_LABELS = {"mild": "Mild", "moderate": "Moderate", "severe": "Severe"}
@@ -120,6 +136,26 @@ HOME_SAFETY_HAZARD_LABELS = {
     HazardType.FALL: "Fall detected",
     HazardType.WANDERING: "Wandering / exit-door breach",
     HazardType.MEDICATION_CHEMICAL_ACCESS: "Unauthorized medication/chemical access",
+}
+
+DAILY_LIFE_MOBILITY_LABELS = {
+    DailyLifeMobilityLevel.INDEPENDENT: "Independent",
+    DailyLifeMobilityLevel.NEEDS_SUPERVISION: "Needs supervision",
+    DailyLifeMobilityLevel.USES_ASSISTIVE_DEVICE: "Uses assistive device",
+}
+
+DAILY_LIFE_CHECKPOINT_LABELS = {
+    CheckpointType.WAKE_UP: "Wake-up",
+    CheckpointType.DRESSING: "Dressing",
+    CheckpointType.MEAL: "Meal",
+    CheckpointType.MEDICATION: "Medication",
+    CheckpointType.WALK: "Walk",
+    CheckpointType.BEDTIME: "Bedtime",
+}
+
+DAILY_LIFE_DEVIATION_LABELS = {
+    DeviationType.SCHEDULE_SLIP: "Schedule slip",
+    DeviationType.ENVIRONMENT_CHANGE: "Environment change",
 }
 
 PROVIDER_LABELS = {
@@ -178,6 +214,11 @@ def get_home_safety_agent(provider: str) -> HomeSafetyProtectionAgent:
     return HomeSafetyProtectionAgent(provider=provider)
 
 
+@st.cache_resource
+def get_daily_life_agent(provider: str) -> DailyLifeRoutineManagementAgent:
+    return DailyLifeRoutineManagementAgent(provider=provider)
+
+
 def get_agent(agent_kind: str, provider: str):
     if agent_kind == "cognitive":
         return get_cognitive_agent(provider)
@@ -187,6 +228,8 @@ def get_agent(agent_kind: str, provider: str):
         return get_adl_agent(provider)
     if agent_kind == "home_safety":
         return get_home_safety_agent(provider)
+    if agent_kind == "daily_life":
+        return get_daily_life_agent(provider)
     return get_social_agent(provider)
 
 
@@ -219,6 +262,22 @@ def start_incident_session(agent_kind: str, provider: str, patient, incident_eve
     try:
         thread_id, step = agent.start_incident_session(
             patient=patient, incident_event=incident_event, max_turns=max_turns
+        )
+    except Exception as exc:
+        st.error(f"Could not start the session: {exc}")
+        return
+    st.session_state["agent_kind"] = agent_kind
+    st.session_state["provider"] = provider
+    st.session_state["thread_id"] = thread_id
+    st.session_state["step"] = step
+    st.session_state["prompt_started_at"] = time.monotonic()
+
+
+def start_deviation_session(agent_kind: str, provider: str, patient, deviation_event, max_turns: int) -> None:
+    agent = get_agent(agent_kind, provider)
+    try:
+        thread_id, step = agent.start_deviation_session(
+            patient=patient, deviation_event=deviation_event, max_turns=max_turns
         )
     except Exception as exc:
         st.error(f"Could not start the session: {exc}")
@@ -411,6 +470,65 @@ def render_home_safety_fields(name: str, stage_value: str, provider: str) -> Non
                 start_incident_session("home_safety", provider, patient, incident_event, max_turns=2)
 
 
+def render_daily_life_fields(name: str, stage_value: str, provider: str) -> None:
+    mobility_label = st.selectbox("Mobility level", options=list(DAILY_LIFE_MOBILITY_LABELS.values()), index=0)
+    mobility_level = next(m for m, label in DAILY_LIFE_MOBILITY_LABELS.items() if label == mobility_label)
+    limitations = st.text_input("Physical limitations (comma-separated)", value="")
+    dietary_restrictions = st.text_input("Dietary restrictions (comma-separated)", value="easy to chew")
+    seasonal_outfits = st.text_input(
+        "Seasonal outfit set (comma-separated)",
+        value="blue zip-up cardigan and pants, grey velcro-strap tracksuit",
+    )
+    medication_names = st.text_input("Daily medications (comma-separated)", value="Donepezil")
+
+    session_type = st.radio(
+        "Session type", options=["Scheduled routine checkpoint", "Report a routine deviation"], index=0
+    )
+
+    if session_type == "Scheduled routine checkpoint":
+        schedule_activity = st.selectbox("Current schedule activity", options=DAILY_LIFE_SCHEDULE_OPTIONS, index=0)
+        max_turns = st.slider("Number of checkpoints", min_value=1, max_value=6, value=2)
+
+        if st.button("Start new session", type="primary", use_container_width=True):
+            if _gemini_ready(provider):
+                patient = DailyLifePatientProfile(
+                    patient_id="gui-patient",
+                    name=name,
+                    stage=DailyLifeDiseaseStage(stage_value),
+                    mobility_level=mobility_level,
+                    physical_limitations=[l.strip() for l in limitations.split(",") if l.strip()],
+                    dietary_restrictions=[d.strip() for d in dietary_restrictions.split(",") if d.strip()],
+                    seasonal_outfit_set=[o.strip() for o in seasonal_outfits.split(",") if o.strip()],
+                    medication_names=[m.strip() for m in medication_names.split(",") if m.strip()],
+                )
+                start_new_session("daily_life", provider, patient, schedule_activity, max_turns)
+    else:
+        deviation_label = st.selectbox("Deviation type", options=list(DAILY_LIFE_DEVIATION_LABELS.values()), index=0)
+        deviation_type = next(d for d, label in DAILY_LIFE_DEVIATION_LABELS.items() if label == deviation_label)
+        checkpoint_label = st.selectbox(
+            "Affected checkpoint", options=list(DAILY_LIFE_CHECKPOINT_LABELS.values()), index=0
+        )
+        checkpoint_type = next(c for c, label in DAILY_LIFE_CHECKPOINT_LABELS.items() if label == checkpoint_label)
+        description = st.text_input("Description (optional)", value="")
+
+        if st.button("Report deviation", type="primary", use_container_width=True):
+            if _gemini_ready(provider):
+                patient = DailyLifePatientProfile(
+                    patient_id="gui-patient",
+                    name=name,
+                    stage=DailyLifeDiseaseStage(stage_value),
+                    mobility_level=mobility_level,
+                    physical_limitations=[l.strip() for l in limitations.split(",") if l.strip()],
+                    dietary_restrictions=[d.strip() for d in dietary_restrictions.split(",") if d.strip()],
+                    seasonal_outfit_set=[o.strip() for o in seasonal_outfits.split(",") if o.strip()],
+                    medication_names=[m.strip() for m in medication_names.split(",") if m.strip()],
+                )
+                deviation_event = DeviationEvent(
+                    deviation_type=deviation_type, checkpoint_type=checkpoint_type, description=description
+                )
+                start_deviation_session("daily_life", provider, patient, deviation_event, max_turns=2)
+
+
 def render_sidebar() -> str:
     with st.sidebar:
         st.header("Training Category")
@@ -434,6 +552,8 @@ def render_sidebar() -> str:
             render_adl_fields(name, stage_value, provider)
         elif agent_kind == "home_safety":
             render_home_safety_fields(name, stage_value, provider)
+        elif agent_kind == "daily_life":
+            render_daily_life_fields(name, stage_value, provider)
         else:
             render_social_fields(name, stage_value, provider)
 
@@ -455,6 +575,7 @@ def render_completed_session(step) -> None:
         getattr(step, "safety_alert", None)
         or getattr(step, "hazard_alert", None)
         or getattr(step, "urgent_alert", None)
+        or getattr(step, "routine_alert", None)
     )
     if alert:
         st.error(f"⚠️ Safety alert: {alert}")

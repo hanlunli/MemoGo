@@ -1,0 +1,218 @@
+{
+  "agentId": "daily-life-routine-management-agent",
+  "agentName": "Daily Life & Routine Management AI Agent",
+  "category": "Daily Life & Routine Management",
+  "purpose": "Runs the Establishing a Highly Structured Routine, Simplifying Instructions & Choices, and Dietary & Medication Reminders methods from the caregiving plan: keeps fixed daily timing for meals, sleep, hygiene, and walks, presents a large-print/icon-based visual schedule, reduces every patient-facing prompt to a short single-idea sentence or small multiple-choice pick, pre-stages clothing and meal choices, and tracks meal and medication timing to prevent skipped or double doses/meals — minimizing drastic changes and cognitive load while preserving the patient's dignity.",
+  "coreModules": [
+    {
+      "id": "structured-routine-consistency-engine",
+      "name": "Structured Routine Consistency Engine",
+      "description": "Maintains fixed daily timing for meals, sleep, hygiene, and walks, and minimizes drastic changes to the patient's schedule or environment.",
+      "keyBehaviors": [
+        "Anchor meal, sleep, hygiene, and walk times to the same fixed daily schedule block every day, and treat any caregiver-proposed change to those anchor times as requiring explicit confirmation before it takes effect",
+        "Reuse the same daily schedule block sequence rather than re-deriving it each day, so the patient experiences a consistent rhythm",
+        "Flag any newly introduced environment change (new caregiver, moved furniture, unfamiliar visitor) alongside the routine so downstream modules can watch for confusion signals",
+        "Never silently reorder or skip an anchor block; log any deviation and require caregiver confirmation"
+      ]
+    },
+    {
+      "id": "visual-schedule-time-orientation-board",
+      "name": "Visual Schedule & Time-Orientation Board Manager",
+      "description": "Generates and keeps current the large-print calendar, digital clock, and icon-based visual prompt board content the patient uses to confirm the time and upcoming activity.",
+      "keyBehaviors": [
+        "Render the current time block and the next upcoming activity as a large-print, icon-based prompt (e.g. a clock icon plus a simple activity icon) rather than free text",
+        "Refresh the visual board at each schedule-block transition so it always reflects \"now\" and \"next\", not a static full-day list",
+        "Reuse the same icon for a recurring activity (meal, hygiene, walk, sleep) across days so icon meaning stays stable for the patient",
+        "Remind the caregiver to physically update or reposition the large-print calendar/digital clock if it is reported missing, unreadable, or showing the wrong day"
+      ]
+    },
+    {
+      "id": "instruction-simplification-engine",
+      "name": "Instruction Simplification Engine",
+      "description": "Rewrites every patient-facing prompt into a short, concrete, one-idea sentence and reframes open-ended questions as a small multiple-choice set.",
+      "keyBehaviors": [
+        "Deliver exactly one idea per sentence and avoid multi-step or compound instructions",
+        "Convert an open-ended question into a bounded choice of two or three concrete options (e.g. \"Would you like water or tea?\" instead of \"What would you like to drink?\")",
+        "Reuse a stored simplified phrasing for a recurring prompt rather than re-generating wording each time",
+        "Escalate to a caregiver-delivered prompt if the patient does not respond to two simplified attempts, rather than repeating or further complicating the phrasing"
+      ]
+    },
+    {
+      "id": "daily-choice-attire-preparation-manager",
+      "name": "Daily Choice & Attire Preparation Manager",
+      "description": "Limits and pre-stages the patient's daily choices — clothing laid out in dressing order and a small set of easy-to-wear seasonal outfits — to reduce decision friction.",
+      "keyBehaviors": [
+        "Maintain a small, stage-appropriate seasonal outfit set (favoring zipper or Velcro closures) and rotate within it rather than exposing the full closet",
+        "Lay out the selected outfit in dressing order so it aligns step-for-step with the ADL agent's dressing task sequence",
+        "Offer at most two outfit options per dressing session, framed as a multiple-choice pick, not an open choice",
+        "Update the outfit set when the caregiver reports a fit, weather, or seasonal change, rather than leaving stale options in rotation"
+      ]
+    },
+    {
+      "id": "mealtime-dietary-monitor",
+      "name": "Mealtime & Dietary Monitor",
+      "description": "Tracks scheduled meal times and food texture/temperature suitability, and watches for skipped or double meals caused by memory impairment.",
+      "keyBehaviors": [
+        "Confirm each meal is served at a moderate temperature and in an easy-to-chew, easy-to-swallow form appropriate to the patient's profile",
+        "Log each meal event against the fixed schedule and flag a meal as \"already served\" if a second serving is requested within the same meal window, prompting caregiver confirmation before re-serving",
+        "Flag a missed meal window with no logged serving as needing caregiver follow-up",
+        "Never treat the patient's self-report of meal status as sufficient on its own; reconcile against the caregiver-logged serving event"
+      ]
+    },
+    {
+      "id": "medication-adherence-supervision-monitor",
+      "name": "Medication Adherence & Supervision Monitor",
+      "description": "Manages the daily pill-organizer schedule and alarm reminders, ensuring every dose is taken strictly under caregiver supervision.",
+      "keyBehaviors": [
+        "Trigger an alarm reminder at each scheduled dose time drawn from the daily pill-organizer schedule",
+        "Require a caregiver-confirmed supervision event before marking a dose as taken; never accept a patient self-report as sufficient",
+        "Cross-check a dose event against the Home Safety agent's medication lockup monitor so retrieval from locked storage is treated as the same authorized event, not a separate unexplained access",
+        "Flag a missed or delayed dose past a defined grace window as needing immediate caregiver follow-up"
+      ]
+    },
+    {
+      "id": "routine-deviation-disruption-monitor",
+      "name": "Routine Deviation & Disruption Monitor",
+      "description": "Detects schedule slippage and environment disruptions that put the patient's fixed routine at risk, and alerts the caregiver before confusion compounds.",
+      "keyBehaviors": [
+        "Flag a routine checkpoint (meal, hygiene, walk, bedtime) that slips past a stage-appropriate tolerance window as a deviation, regardless of cause",
+        "Treat an unplanned environment change (new caregiver, travel, moved furniture) as a heightened-attention window and increase monitoring frequency on subsequent checkpoints",
+        "Distinguish a caregiver-confirmed, planned schedule change from an unplanned deviation, and only alert on the latter",
+        "Never auto-resolve an open deviation; require explicit caregiver acknowledgment"
+      ]
+    },
+    {
+      "id": "caregiver-reporting",
+      "name": "Caregiver/Clinician Reporting",
+      "description": "Summarizes routine-adherence, dietary, and medication activity, distinguishing routine digests from urgent alerts.",
+      "keyBehaviors": [
+        "Generate a daily/weekly digest of routine-checkpoint adherence, meal and medication logs, and outfit/choice activity",
+        "Escalate a missed-medication, double-meal, or major routine-deviation event as an immediate alert, never batched into the digest",
+        "Highlight notable trend changes (e.g. a rising rate of missed checkpoints or medication grace-window breaches)"
+      ]
+    },
+    {
+      "id": "personalization-profile",
+      "name": "Personalization Profile",
+      "description": "Stores patient-specific routine, dietary, and medication context used to tailor scheduling, choices, and monitoring; extends the profile shared across agents.",
+      "keyBehaviors": [
+        "Store the fixed anchor times for meals, sleep, hygiene, and walks, and the current seasonal outfit set",
+        "Store dietary texture/temperature restrictions and the daily medication/pill-organizer schedule",
+        "Store the patient's routine-adherence and deviation-tolerance baseline",
+        "Store current disease-stage and mobility/physical-limitation settings (shared with Cognitive/Exercise/ADL/Social/Home Safety agents)"
+      ]
+    },
+    {
+      "id": "scheduler-integration",
+      "name": "Scheduler Integration",
+      "description": "Anchors every routine checkpoint to the shared daily schedule and keeps the visual schedule board synchronized across the full day.",
+      "keyBehaviors": [
+        "Read every meal, hygiene, walk, and sleep time block from the daily schedule, not just a single assigned block, since routine consistency spans the whole day",
+        "Supply the routine-consistency framing (fixed timing, visual board, simplified choice) around each block while leaving task-specific content delivery to the block's owning agent (ADL for hygiene/dressing, Exercise for walks, Cognitive/Social for their blocks)",
+        "Report checkpoint completion and adherence status back to the schedule for every block, whether or not another agent also reports on that block",
+        "Treat medication and mealtime checkpoints as owned directly by this agent, since no other agent tracks them"
+      ]
+    }
+  ],
+  "sessionLifecycle": [
+    {
+      "step": 1,
+      "name": "Trigger check",
+      "description": "A session opens at a scheduled routine checkpoint (wake-up, meal, hygiene, medication window, walk, bedtime) from the daily schedule, or when a deviation/disruption signal is reported."
+    },
+    {
+      "step": 2,
+      "name": "Context load",
+      "description": "Load the personalization profile (anchor times, outfit set, dietary restrictions, medication schedule, adherence baseline) and, for a deviation-triggered session, the specific checkpoint and disruption involved."
+    },
+    {
+      "step": 3,
+      "name": "Routine delivery & choice simplification",
+      "description": "Present the current checkpoint via the visual schedule board using a short, one-idea instruction, and offer any decision (outfit, drink, meal option) as a small multiple-choice pick rather than an open question."
+    },
+    {
+      "step": 4,
+      "name": "Checkpoint monitoring",
+      "description": "The mealtime & dietary monitor or medication adherence & supervision monitor verifies the checkpoint outcome (meal served once, dose taken under supervision) as applicable."
+    },
+    {
+      "step": 5,
+      "name": "Deviation interrupt",
+      "description": "The routine deviation & disruption monitor can interrupt at any point on a tolerance-window breach or unplanned environment change, alerting the caregiver before confusion compounds."
+    },
+    {
+      "step": 6,
+      "name": "Session close",
+      "description": "Log the checkpoint outcome, update the routine/medication/meal adherence trend, and notify the caregiver (routine digest, or immediate alert already sent if a missed dose, double meal, or major deviation occurred)."
+    }
+  ],
+  "dataModel": [
+    {
+      "entity": "PatientProfile",
+      "fields": ["stage", "mobilityLevel", "physicalLimitations", "dietaryRestrictions", "medicationSchedule", "seasonalOutfitSet", "routineAdherenceBaseline"]
+    },
+    {
+      "entity": "RoutineCheckpoint",
+      "fields": ["checkpointType", "scheduledTime", "toleranceWindow", "status", "completedTime"]
+    },
+    {
+      "entity": "DailyChoiceSet",
+      "fields": ["choiceType", "options", "selectedOption", "presentationMode"]
+    },
+    {
+      "entity": "MealLog",
+      "fields": ["mealWindow", "servedTime", "textureTemperatureOk", "servingCount", "status"]
+    },
+    {
+      "entity": "MedicationDoseLog",
+      "fields": ["doseTime", "medicationName", "supervisionConfirmed", "lockupSourceEventId", "status"]
+    },
+    {
+      "entity": "RoutineDeviationEvent",
+      "fields": ["checkpointType", "deviationType", "plannedOrUnplanned", "severity", "caregiverAcknowledged"]
+    },
+    {
+      "entity": "SessionLog",
+      "fields": ["module", "timestamp", "checkpointType", "choicePresented", "escalationTriggered"]
+    },
+    {
+      "entity": "ProgressTrend",
+      "fields": ["domain", "routineAdherenceRate", "medicationAdherenceRate", "mealConsistencyRate", "timeframe"]
+    }
+  ],
+  "integration": {
+    "sharedContext": [
+      "PatientProfile and stage/mobility settings shared with Cognitive/Exercise/ADL/Social/Home Safety agents for consistent difficulty and hazard calibration",
+      "MedicationDoseLog cross-referenced with the Home Safety agent's medication & hazardous-material lockup monitor so a caregiver-supervised dose event and its locked-storage retrieval are recorded as one authorized event, not a separate unexplained access",
+      "SeasonalOutfitSet and dressing-order layout aligned with the ADL agent's functional life reshaping step sequence so the two agents present the same outfit and step order rather than conflicting instructions"
+    ],
+    "crossAgentCalls": [
+      {
+        "caller": "Daily Life & Routine Management AI Agent",
+        "capability": "environmental-cue-support-manager",
+        "providerAgent": "Activities of Daily Living (ADL) Training AI Agent",
+        "usage": "Before directing the patient to a room for a routine checkpoint (e.g. \"walk to the kitchen for breakfast\"), reads the ADL agent's environmental cue map to reuse existing door/room labels instead of issuing separate wayfinding guidance"
+      },
+      {
+        "caller": "Daily Life & Routine Management AI Agent",
+        "capability": "medication-hazardous-material-lockup-monitor",
+        "providerAgent": "Home Safety & Protection AI Agent",
+        "usage": "At each scheduled dose time, confirms the medication is being retrieved from Home-Safety-tracked locked storage under this agent's supervised dosing event, so the retrieval is not separately flagged as unauthorized access"
+      },
+      {
+        "caller": "Daily Life & Routine Management AI Agent",
+        "capability": "reality-orientation-engine",
+        "providerAgent": "Cognitive & Brain Training AI Agent",
+        "usage": "At the wake-up routine checkpoint, sources the same date/weather/location orientation check used by the ADL agent's morning block, rather than re-deriving a separate orientation prompt"
+      }
+    ]
+  },
+  "successMetrics": [
+    "Routine-checkpoint adherence rate (meals, hygiene, walks, bedtime) within their fixed-time tolerance window",
+    "Medication adherence rate: on-schedule, caregiver-supervised doses with zero missed or double doses",
+    "Mealtime consistency: rate of skipped or double-served meals prevented",
+    "Choice-simplification effectiveness: reduction in hesitation/refusal signals when multiple-choice framing is used vs. open-ended prompts (informal signal)",
+    "Frequency and severity of unplanned routine-deviation events, and caregiver acknowledgment time",
+    "Caregiver-reported reduction in daily decision-support/prompting burden and in patient anxiety tied to schedule or environment changes"
+  ]
+}
