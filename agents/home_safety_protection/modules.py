@@ -154,14 +154,19 @@ def assess_incident_acknowledgment(response_text: Optional[str], response_latenc
     """Returns (acknowledged, should_escalate_to_family_contact).
 
     This routing decision is deterministic, not LLM-judged: an emergency escalation must never
-    hinge on a model's read of a free-text reply.
+    hinge on a model's read of a free-text reply. Acknowledgment requires an explicit
+    confirmation phrase (ACK_KEYWORDS) — a vague or off-topic reply (e.g. "ok", "yes") must
+    not be read as the hazard being handled.
     """
     if not response_text:
         return False, True
-    lowered = response_text.lower()
-    if any(keyword in lowered for keyword in NO_ACK_KEYWORDS) or response_latency_s > ACK_TIMEOUT_S:
+    if response_latency_s > ACK_TIMEOUT_S:
         return False, True
-    return True, False
+    lowered = response_text.lower()
+    if any(keyword in lowered for keyword in NO_ACK_KEYWORDS):
+        return False, True
+    acknowledged = any(keyword in lowered for keyword in ACK_KEYWORDS)
+    return acknowledged, not acknowledged
 
 
 class ChecklistItemEngine:

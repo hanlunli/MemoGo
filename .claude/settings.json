@@ -55,7 +55,9 @@
       "Bash(PYTHONPATH=. venv/Scripts/python \"C:\\\\Users\\\\sj932053\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-sj932053-AIAgents-MemoGo\\\\92ed3289-0739-4d18-b6d0-e0f8802c2314\\\\scratchpad\\\\verify_fixes_ollama.py\")",
       "Bash(cat \"C:\\\\Users\\\\sj932053\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-sj932053-AIAgents-MemoGo\\\\92ed3289-0739-4d18-b6d0-e0f8802c2314\\\\tasks\\\\b6jlt1cew.output\" 2>&1 *)",
       "Bash(python -m pytest -q)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(git check-ignore *)",
+      "Bash(venv/Scripts/python -m py_compile agents/home_safety_protection/*.py tests/test_home_safety_modules.py)"
     ],
     "additionalDirectories": [
       "c:\\Users\\sj932053\\AIAgents\\MemoGo\\agents",
