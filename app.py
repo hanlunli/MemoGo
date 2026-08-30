@@ -17,16 +17,22 @@ from agents.exercise_motor_coordination_training import ExerciseMotorCoordinatio
 from agents.exercise_motor_coordination_training import DiseaseStage as ExerciseDiseaseStage
 from agents.exercise_motor_coordination_training import PatientProfile as ExercisePatientProfile
 from agents.exercise_motor_coordination_training.llm_logging import configure_logging as configure_exercise_logging
+from agents.social_creative_engagement_training import FineMotorLevel, SocialContact, SocialCreativeEngagementTrainingAgent
+from agents.social_creative_engagement_training import DiseaseStage as SocialDiseaseStage
+from agents.social_creative_engagement_training import PatientProfile as SocialPatientProfile
+from agents.social_creative_engagement_training.llm_logging import configure_logging as configure_social_logging
 
 load_dotenv()
 configure_cognitive_logging()
 configure_exercise_logging()
 configure_adl_logging()
+configure_social_logging()
 
 AGENT_LABELS = {
     "cognitive": "🧠 Cognitive & Brain Training",
     "exercise": "🏃 Exercise & Motor Coordination Training",
     "adl": "🧺 Activities of Daily Living (ADL) Training",
+    "social": "🎨 Social & Creative Engagement Training",
 }
 
 COGNITIVE_SCHEDULE_OPTIONS = [
@@ -43,6 +49,11 @@ EXERCISE_SCHEDULE_OPTIONS = [
 ADL_SCHEDULE_OPTIONS = [
     "07:30-08:30 Morning routine, hygiene & breakfast",
     "10:30-11:30 Household chores",
+]
+
+SOCIAL_SCHEDULE_OPTIONS = [
+    "13:00-14:30 Reminiscence & social engagement",
+    "14:30-15:30 Fine motor skills & art therapy",
 ]
 
 STAGE_LABELS = {"mild": "Mild", "moderate": "Moderate", "severe": "Severe"}
@@ -69,6 +80,14 @@ ADL_TASK_OPTIONS = [
     "wiping the table",
     "tidying the kitchen counter",
 ]
+
+SOCIAL_FINE_MOTOR_LABELS = {
+    FineMotorLevel.INDEPENDENT: "Independent",
+    FineMotorLevel.MILD_TREMOR: "Mild tremor",
+    FineMotorLevel.NEEDS_ASSIST: "Needs assist",
+}
+
+CRAFT_OPTIONS = ["bead stringing", "origami", "watering plants", "drawing", "paper cutting"]
 
 PROVIDER_LABELS = {
     "ollama": "Ollama (local, llama3.3)",
@@ -116,12 +135,19 @@ def get_adl_agent(provider: str) -> ADLTrainingAgent:
     return ADLTrainingAgent(provider=provider)
 
 
+@st.cache_resource
+def get_social_agent(provider: str) -> SocialCreativeEngagementTrainingAgent:
+    return SocialCreativeEngagementTrainingAgent(provider=provider)
+
+
 def get_agent(agent_kind: str, provider: str):
     if agent_kind == "cognitive":
         return get_cognitive_agent(provider)
     if agent_kind == "exercise":
         return get_exercise_agent(provider)
-    return get_adl_agent(provider)
+    if agent_kind == "adl":
+        return get_adl_agent(provider)
+    return get_social_agent(provider)
 
 
 def init_state() -> None:
@@ -245,6 +271,35 @@ def render_adl_fields(name: str, stage_value: str, provider: str) -> None:
             start_new_session("adl", provider, patient, schedule_activity, max_turns)
 
 
+def render_social_fields(name: str, stage_value: str, provider: str) -> None:
+    fine_motor_label = st.selectbox("Fine motor level", options=list(SOCIAL_FINE_MOTOR_LABELS.values()), index=0)
+    fine_motor_level = next(m for m, label in SOCIAL_FINE_MOTOR_LABELS.items() if label == fine_motor_label)
+    sensitivities = st.text_input("Material sensitivities (comma-separated)", value="")
+    preferred_crafts = st.multiselect("Preferred crafts/horticulture", options=CRAFT_OPTIONS, default=["bead stringing"])
+    preferred_songs = st.text_input("Preferred song themes (comma-separated)", value="folk songs")
+    contact_name = st.text_input("Social contact name", value="Mrs. Lee")
+    contact_relationship = st.text_input("Social contact relationship", value="neighbor")
+    schedule_activity = st.selectbox("Current schedule activity", options=SOCIAL_SCHEDULE_OPTIONS, index=1)
+    max_turns = st.slider("Number of turns", min_value=1, max_value=8, value=3)
+
+    if st.button("Start new session", type="primary", use_container_width=True):
+        if _gemini_ready(provider):
+            social_contacts = (
+                [SocialContact(name=contact_name, relationship=contact_relationship)] if contact_name else []
+            )
+            patient = SocialPatientProfile(
+                patient_id="gui-patient",
+                name=name,
+                stage=SocialDiseaseStage(stage_value),
+                fine_motor_level=fine_motor_level,
+                material_sensitivities=[s.strip() for s in sensitivities.split(",") if s.strip()],
+                preferred_crafts=preferred_crafts,
+                preferred_songs=[s.strip() for s in preferred_songs.split(",") if s.strip()],
+                social_contacts=social_contacts,
+            )
+            start_new_session("social", provider, patient, schedule_activity, max_turns)
+
+
 def render_sidebar() -> str:
     with st.sidebar:
         st.header("Training Category")
@@ -264,8 +319,10 @@ def render_sidebar() -> str:
             render_cognitive_fields(name, stage_value, provider)
         elif agent_kind == "exercise":
             render_exercise_fields(name, stage_value, provider)
-        else:
+        elif agent_kind == "adl":
             render_adl_fields(name, stage_value, provider)
+        else:
+            render_social_fields(name, stage_value, provider)
 
     return agent_kind
 
@@ -281,7 +338,11 @@ def render_active_turn(prompt: str) -> None:
 
 
 def render_completed_session(step) -> None:
-    alert = getattr(step, "safety_alert", None) or getattr(step, "hazard_alert", None)
+    alert = (
+        getattr(step, "safety_alert", None)
+        or getattr(step, "hazard_alert", None)
+        or getattr(step, "urgent_alert", None)
+    )
     if alert:
         st.error(f"⚠️ Safety alert: {alert}")
     else:
