@@ -69,7 +69,6 @@ _CHECKPOINT_SERDE = JsonPlusSerializer(
 class SessionState(TypedDict, total=False):
     patient: PatientProfile
     trigger_type: str
-    schedule_activity: Optional[str]
     distortion_event: Optional[RealityDistortionEvent]
     module: ModuleId
     distortion_type: Optional[DistortionType]
@@ -349,12 +348,13 @@ def build_session_graph(llm: BaseChatModel):
                 return "session_close"
             return "prepare_content"
 
+        if state.get("turn_count", 0) >= state.get("max_turns", 8):
+            return "session_close"
+
         if state.get("reminiscence_active"):
             return "prepare_content"
 
-        if state.get("step_index", 0) >= len(state.get("steps", [])) or state.get("turn_count", 0) >= state.get(
-            "max_turns", 8
-        ):
+        if state.get("step_index", 0) >= len(state.get("steps", [])):
             return "session_close"
         return "prepare_content"
 

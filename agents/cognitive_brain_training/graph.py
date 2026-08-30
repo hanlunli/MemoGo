@@ -30,6 +30,7 @@ from .modules import (
     ReminiscenceSessionManager,
     adjust_difficulty,
     assess_engagement,
+    build_progress_trends,
     resolve_module,
 )
 from .prompts import ResponseAssessment
@@ -37,13 +38,14 @@ from .prompts import ResponseAssessment
 logger = logging.getLogger("cognitive_brain_training.graph")
 
 DEFAULT_MEMORY = MemoryItem(media_type="story", theme="family", decade="1980s")
-EXERCISE_TYPES = (
-    "arithmetic",
-    "word association",
-    "picture recognition",
-    "mahjong-style tile matching",
-    "simple logic puzzle",
-)
+EXERCISE_TYPE_DOMAINS: dict[str, str] = {
+    "arithmetic": "executive function",
+    "word association": "language",
+    "picture recognition": "memory",
+    "mahjong-style tile matching": "attention",
+    "simple logic puzzle": "executive function",
+}
+EXERCISE_TYPES = tuple(EXERCISE_TYPE_DOMAINS.keys())
 
 _CHECKPOINT_SERDE = JsonPlusSerializer(
     allowed_msgpack_modules=[
@@ -66,6 +68,7 @@ class SessionState(TypedDict, total=False):
     module: ModuleId
     current_prompt: str
     current_exercise: Optional[ExerciseItem]
+    current_domain: Optional[str]
     patient_response: Optional[str]
     response_latency_s: float
     difficulty: int
@@ -97,22 +100,25 @@ def build_session_graph(llm: BaseChatModel):
         patient = state["patient"]
         module = state["module"]
         exercise: Optional[ExerciseItem] = None
+        domain: Optional[str] = None
 
         if module == ModuleId.REALITY_ORIENTATION:
-            prompt = orientation_engine.generate_prompt(patient)
+            prompt, domain = orientation_engine.generate_prompt(patient)
         elif module == ModuleId.REMINISCENCE:
             memories = state.get("memory_items") or [DEFAULT_MEMORY]
             memory = random.choice(memories)
             prompt = reminiscence_manager.generate_prompt(patient, memory)
         else:
+            exercise_type = random.choice(EXERCISE_TYPES)
+            domain = EXERCISE_TYPE_DOMAINS[exercise_type]
             exercise = exercise_generator.generate(
-                domain="memory",
+                domain=domain,
                 difficulty=state.get("difficulty", 2),
-                exercise_type=random.choice(EXERCISE_TYPES),
+                exercise_type=exercise_type,
             )
             prompt = exercise.content
 
-        return {"current_prompt": prompt, "current_exercise": exercise}
+        return {"current_prompt": prompt, "current_exercise": exercise, "current_domain": domain}
 
     def deliver_and_capture(state: SessionState) -> SessionState:
         response = interrupt({"prompt": state["current_prompt"]})
@@ -148,6 +154,7 @@ def build_session_graph(llm: BaseChatModel):
                 patient_response=response_text,
                 feedback=assessment.feedback,
                 correct=assessment.correct,
+                domain=state.get("current_domain"),
             )
         )
         session_log.engagement_score = engagement_score
@@ -166,6 +173,7 @@ def build_session_graph(llm: BaseChatModel):
         session_log.ended_reason = (
             "fatigue_detected" if state.get("fatigue_detected") else "max_turns_reached"
         )
+        session_log.progress_trends = build_progress_trends(session_log)
         try:
             summary = caregiver_reporter.summarize(session_log.model_dump_json())
         except Exception:

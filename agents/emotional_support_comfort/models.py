@@ -5,11 +5,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-
-class DiseaseStage(str, Enum):
-    MILD = "mild"
-    MODERATE = "moderate"
-    SEVERE = "severe"
+from agents.shared.enums import DiseaseStage
 
 
 class ModuleId(str, Enum):
@@ -98,6 +94,7 @@ class SundowningJournalEntry(BaseModel):
     symptoms_observed: list[str] = Field(default_factory=list)
     intervention_used: str
     outcome: str
+    matched_known_trigger: Optional[str] = None
 
 
 class SessionLog(BaseModel):

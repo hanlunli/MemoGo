@@ -49,6 +49,15 @@ def test_detect_safety_incident_flags_near_fall():
     assert detect_safety_incident("I stumbled but caught myself") == IncidentFlag.NEAR_FALL
 
 
+def test_detect_safety_incident_does_not_misclassify_near_fall_as_fall():
+    assert detect_safety_incident("I almost fell but grabbed the railing") == IncidentFlag.NEAR_FALL
+    assert detect_safety_incident("She nearly fell getting up from the chair") == IncidentFlag.NEAR_FALL
+
+
+def test_detect_safety_incident_ignores_bare_pain_mention():
+    assert detect_safety_incident("No pain at all, that felt great") == IncidentFlag.NONE
+
+
 def test_detect_safety_incident_flags_distress():
     assert detect_safety_incident("I feel dizzy and my chest hurts") == IncidentFlag.DISTRESS
 

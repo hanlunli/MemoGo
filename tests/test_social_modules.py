@@ -1,4 +1,10 @@
-from agents.social_creative_engagement_training.models import DiseaseStage, IncidentFlag, ModuleId
+from agents.social_creative_engagement_training.models import (
+    DiseaseStage,
+    FineMotorLevel,
+    IncidentFlag,
+    ModuleId,
+    PatientProfile,
+)
 from agents.social_creative_engagement_training.modules import (
     adjust_complexity,
     assess_mood_and_engagement,
@@ -7,7 +13,14 @@ from agents.social_creative_engagement_training.modules import (
     detect_material_hazard,
     is_safety_stop,
     resolve_module,
+    select_craft_activity,
 )
+
+
+def _make_patient(**overrides) -> PatientProfile:
+    defaults = dict(patient_id="t1", name="Test", stage=DiseaseStage.MILD)
+    defaults.update(overrides)
+    return PatientProfile(**defaults)
 
 
 def test_resolve_module_matches_keywords():
@@ -33,6 +46,18 @@ def test_build_craft_step_sequence_leaves_beads_unflagged_for_mild_stage():
 def test_build_craft_step_sequence_always_flags_paper_cutting():
     steps = build_craft_step_sequence("paper cutting", DiseaseStage.MILD)
     assert all(is_hazard for _, is_hazard in steps)
+
+
+def test_select_craft_activity_avoids_high_dexterity_crafts_when_needs_assist():
+    patient = _make_patient(fine_motor_level=FineMotorLevel.NEEDS_ASSIST)
+    for _ in range(50):
+        assert select_craft_activity(patient) in ("watering plants", "drawing")
+
+
+def test_select_craft_activity_avoids_sensitive_material_even_when_preferred():
+    patient = _make_patient(preferred_crafts=["origami"], material_sensitivities=["paper"])
+    for _ in range(50):
+        assert select_craft_activity(patient) != "origami"
 
 
 def test_choose_participation_mode_listens_only_on_agitation():

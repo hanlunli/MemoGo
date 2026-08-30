@@ -19,10 +19,12 @@ from .prompts import (
 )
 
 FATIGUE_KEYWORDS = ("tired", "stop", "enough", "no more", "don't want", "leave me", "out of breath")
+# NEAR_FALL is checked before FALL: its own keywords ("almost fell", "nearly fell") contain "fell"
+# as a substring, so checking FALL first would misclassify every recovered near-fall as a real fall.
 SAFETY_KEYWORDS: dict[IncidentFlag, tuple[str, ...]] = {
-    IncidentFlag.FALL: ("fell", "fall", "on the floor", "on the ground"),
     IncidentFlag.NEAR_FALL: ("almost fell", "stumbled", "lost balance", "nearly fell"),
-    IncidentFlag.DISTRESS: ("dizzy", "chest pain", "chest hurts", "can't breathe", "cannot breathe", "pain"),
+    IncidentFlag.FALL: ("fell", "fall", "on the floor", "on the ground"),
+    IncidentFlag.DISTRESS: ("dizzy", "chest pain", "chest hurts", "can't breathe", "cannot breathe", "in pain"),
 }
 
 AEROBIC_EXERCISE_TYPES = ("walking", "tai chi", "baduanjin", "square dancing")
@@ -52,7 +54,7 @@ class AerobicExerciseSessionEngine:
     def __init__(self, llm: BaseChatModel):
         self._chain = AEROBIC_INSTRUCTION_PROMPT | llm
 
-    def generate_instruction(self, patient: PatientProfile, exercise_type: str, phase: str) -> str:
+    def generate_instruction(self, patient: PatientProfile, exercise_type: str, phase: str, intensity: int) -> str:
         result = self._chain.invoke(
             {
                 "stage": patient.stage.value,
@@ -61,6 +63,7 @@ class AerobicExerciseSessionEngine:
                 "limitations": ", ".join(patient.physical_limitations) or "none reported",
                 "exercise_type": exercise_type,
                 "phase": phase,
+                "intensity": intensity,
             }
         )
         return result.content
@@ -75,7 +78,7 @@ class DualTaskTrainingCoordinator:
         self._cognitive_exercise_generator = CognitiveExerciseGenerator(llm)
 
     def generate_instruction(
-        self, patient: PatientProfile, motor_task: str, include_cognitive_task: bool
+        self, patient: PatientProfile, motor_task: str, include_cognitive_task: bool, intensity: int
     ) -> tuple[str, Optional[str]]:
         cognitive_task: Optional[str] = None
         if include_cognitive_task:
@@ -90,6 +93,7 @@ class DualTaskTrainingCoordinator:
                 "stage": patient.stage.value,
                 "motor_task": motor_task,
                 "cognitive_task": cognitive_task or "none — motor task only",
+                "intensity": intensity,
             }
         )
         return result.instruction, cognitive_task

@@ -5,11 +5,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-
-class DiseaseStage(str, Enum):
-    MILD = "mild"
-    MODERATE = "moderate"
-    SEVERE = "severe"
+from agents.shared.enums import DiseaseStage
 
 
 class ModuleId(str, Enum):

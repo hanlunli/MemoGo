@@ -200,6 +200,18 @@ def resolve_reminiscence_theme(patient: PatientProfile) -> str:
     return theme
 
 
+def sanitize_biography_for_reminiscence(patient: PatientProfile) -> str:
+    """Strips the biography before it's handed to the shared cross-agent reminiscence-question
+    generator, so a sensitive/traumatic topic mentioned in the free-text biography can't leak into
+    the generated open-ended question — even after the theme itself was already swapped to a safe
+    default by resolve_reminiscence_theme."""
+    biography = patient.biography or ""
+    lowered = biography.lower()
+    if any(topic.lower() in lowered for topic in patient.sensitive_topics_to_avoid):
+        return ""
+    return biography
+
+
 def build_reminiscence_box(theme: str) -> ReminiscenceBoxItem:
     return ReminiscenceBoxItem(
         visual=f"Old photos, keepsakes, or mementos related to {theme}.",
@@ -321,7 +333,8 @@ class ReminiscenceSessionEngine:
             return result.content
         if step_index == 2:
             memory = MemoryItem(media_type="photo_or_song", theme=theme, decade="their youth", description=box.visual)
-            generated_question = self._reminiscence_manager.generate_prompt(patient, memory)
+            safe_patient = patient.model_copy(update={"biography": sanitize_biography_for_reminiscence(patient)})
+            generated_question = self._reminiscence_manager.generate_prompt(safe_patient, memory)
             result = self._heuristic_chain.invoke(
                 {"name": patient.name, "theme": theme, "generated_question": generated_question}
             )

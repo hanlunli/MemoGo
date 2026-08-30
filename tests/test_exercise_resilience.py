@@ -23,7 +23,7 @@ def _start_state() -> dict:
     }
 
 
-def _stub_instruction(self, patient, exercise_type, phase):
+def _stub_instruction(self, patient, exercise_type, phase, intensity):
     return "Please take a few steps forward."
 
 

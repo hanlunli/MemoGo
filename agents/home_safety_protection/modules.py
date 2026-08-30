@@ -6,7 +6,18 @@ from langchain_core.language_models.chat_models import BaseChatModel
 
 from agents.adl_training.modules import TASK_ROOM_LABELS as ADL_TASK_ROOM_LABELS
 
-from .models import ChecklistItem, ChecklistStatus, HazardType, IncidentEvent, ModuleId, PatientProfile, Severity, WanderingRiskLevel
+from .models import (
+    ChecklistItem,
+    ChecklistStatus,
+    DiseaseStage,
+    HazardType,
+    IncidentEvent,
+    MobilityLevel,
+    ModuleId,
+    PatientProfile,
+    Severity,
+    WanderingRiskLevel,
+)
 from .prompts import (
     CAREGIVER_SUMMARY_PROMPT,
     CHECKLIST_ITEM_PROMPT,
@@ -71,10 +82,16 @@ ACK_KEYWORDS = (
     "shut off",
     "locked",
     "secured",
-    "on my way",
-    "checking now",
     "ventilat",
     "okay now",
+)
+
+# The caregiver is actively responding but the hazard itself isn't confirmed mitigated yet — must
+# not be treated as resolved, but also shouldn't escalate past the caregiver who is already
+# engaged; the session should just check in again.
+IN_PROGRESS_KEYWORDS = (
+    "on my way",
+    "checking now",
 )
 
 NO_ACK_KEYWORDS = (
@@ -105,16 +122,29 @@ def existing_adl_room_labels() -> list[str]:
     return list(ADL_TASK_ROOM_LABELS.values())
 
 
-def build_checklist_sequence(rooms: list[str]) -> list[ChecklistItem]:
+def build_checklist_sequence(
+    rooms: list[str],
+    stage: DiseaseStage = DiseaseStage.MILD,
+    mobility_level: MobilityLevel = MobilityLevel.INDEPENDENT,
+) -> list[ChecklistItem]:
+    # Checklist strictness rises with disease stage: at MODERATE/SEVERE every item is treated as
+    # high priority instead of just the fire/gas/medication ones. Reduced mobility additionally
+    # promotes fall-hazard items specifically, regardless of stage.
+    stage_escalates_all = stage in (DiseaseStage.MODERATE, DiseaseStage.SEVERE)
+    mobility_escalates_falls = mobility_level in (MobilityLevel.NEEDS_SUPERVISION, MobilityLevel.USES_ASSISTIVE_DEVICE)
+
     items: list[ChecklistItem] = []
     for room in rooms:
         for hazard_type, mitigation_item, is_high_priority in HOME_CHECKLIST_TEMPLATES.get(room, []):
+            priority = is_high_priority or stage_escalates_all or (
+                mobility_escalates_falls and hazard_type == HazardType.FALL
+            )
             items.append(
                 ChecklistItem(
                     room=room,
                     hazard_type=hazard_type,
                     mitigation_item=mitigation_item,
-                    is_high_priority=is_high_priority,
+                    is_high_priority=priority,
                 )
             )
     # Stable sort: fire/gas and medication/chemical items (marked high priority) surface
@@ -123,12 +153,17 @@ def build_checklist_sequence(rooms: list[str]) -> list[ChecklistItem]:
     return items
 
 
+_EMERGENCY_HAZARDS = (HazardType.FIRE_GAS, HazardType.WANDERING, HazardType.MEDICATION_CHEMICAL_ACCESS)
+
+
 def classify_incident_severity(hazard_type: HazardType) -> Severity:
-    """Every hazard type the real-time monitor currently models — fire/gas, falls, wandering
-    geofence breaches, and unauthorized medication/chemical access — is emergency severity by
-    design, regardless of the patient's disease stage."""
-    del hazard_type
-    return Severity.EMERGENCY
+    """Fire/gas detector trips, wandering geofence breaches, and unauthorized medication/chemical
+    access are always emergency severity, regardless of the patient's disease stage. A fall report
+    is caution severity by default — serious enough for a caregiver alert, but not automatically an
+    emergency escalation — since the sensor signal alone can't confirm an injury occurred."""
+    if hazard_type in _EMERGENCY_HAZARDS:
+        return Severity.EMERGENCY
+    return Severity.CAUTION
 
 
 def escalate_risk_level(current: WanderingRiskLevel, hazard_type: HazardType) -> WanderingRiskLevel:
@@ -165,6 +200,10 @@ def assess_incident_acknowledgment(response_text: Optional[str], response_latenc
     lowered = response_text.lower()
     if any(keyword in lowered for keyword in NO_ACK_KEYWORDS):
         return False, True
+    if any(keyword in lowered for keyword in IN_PROGRESS_KEYWORDS):
+        # The caregiver is engaged and en route/checking, but the hazard itself isn't confirmed
+        # mitigated — don't escalate past them, but don't mark it resolved either.
+        return False, False
     acknowledged = any(keyword in lowered for keyword in ACK_KEYWORDS)
     return acknowledged, not acknowledged
 

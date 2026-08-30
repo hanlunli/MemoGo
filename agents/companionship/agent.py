@@ -36,7 +36,7 @@ class SessionStep:
     prompt: Optional[str] = None
     session_log: Optional[SessionLog] = None
     caregiver_summary: Optional[str] = None
-    caregiver_alert: Optional[str] = None
+    alert: Optional[str] = None
 
 
 class CompanionshipAgent:
@@ -57,13 +57,18 @@ class CompanionshipAgent:
         max_turns: int = 8,
         thread_id: Optional[str] = None,
     ) -> tuple[str, SessionStep]:
-        """Starts a scheduled stage-adaptive companionship session."""
+        """Starts a scheduled stage-adaptive companionship session.
+
+        schedule_activity is accepted for the same call signature as every other agent's
+        start_session, but this module has only one scheduled-session flow, so there's nothing
+        to dispatch on and it isn't threaded into the graph state.
+        """
+        del schedule_activity
         thread_id = thread_id or str(uuid.uuid4())
         config = {"configurable": {"thread_id": thread_id}}
         initial_state = {
             "patient": patient,
             "trigger_type": "scheduled_companionship",
-            "schedule_activity": schedule_activity,
             "max_turns": max_turns,
             "turn_count": 0,
         }
@@ -107,5 +112,5 @@ class CompanionshipAgent:
             done=True,
             session_log=result["session_log"],
             caregiver_summary=result.get("caregiver_summary"),
-            caregiver_alert=result.get("caregiver_alert"),
+            alert=result.get("caregiver_alert"),
         )

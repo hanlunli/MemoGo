@@ -14,6 +14,7 @@ from agents.cognitive_brain_training.models import MemoryItem
 from .graph import build_session_graph
 from .llm_logging import LLMUsageLoggingHandler
 from .models import PatientProfile, SessionLog
+from .modules import STAGE_COMPLEXITY_CEILING
 
 Provider = Literal["ollama", "gemini"]
 
@@ -38,7 +39,7 @@ class SessionStep:
     prompt: Optional[str] = None
     session_log: Optional[SessionLog] = None
     caregiver_summary: Optional[str] = None
-    urgent_alert: Optional[str] = None
+    alert: Optional[str] = None
 
 
 class SocialCreativeEngagementTrainingAgent:
@@ -69,7 +70,7 @@ class SocialCreativeEngagementTrainingAgent:
             "memory_items": memory_items,
             "max_turns": max_turns,
             "turn_count": 0,
-            "complexity": starting_complexity,
+            "complexity": min(starting_complexity, STAGE_COMPLEXITY_CEILING[patient.stage]),
             "consecutive_agitation_count": 0,
             "agitation_detected": False,
         }
@@ -93,5 +94,5 @@ class SocialCreativeEngagementTrainingAgent:
             done=True,
             session_log=result["session_log"],
             caregiver_summary=result.get("caregiver_summary"),
-            urgent_alert=result.get("urgent_alert"),
+            alert=result.get("urgent_alert"),
         )

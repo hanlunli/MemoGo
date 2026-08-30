@@ -5,11 +5,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-
-class DiseaseStage(str, Enum):
-    MILD = "mild"
-    MODERATE = "moderate"
-    SEVERE = "severe"
+from agents.shared.enums import DiseaseStage
 
 
 class ModuleId(str, Enum):
@@ -65,6 +61,7 @@ class CraftActivityItem(BaseModel):
 class ActivitySignalLog(BaseModel):
     incident_flag: IncidentFlag = IncidentFlag.NONE
     agitation_detected: bool = False
+    engagement_score: float = 1.0
 
 
 class SessionTurn(BaseModel):
@@ -74,6 +71,7 @@ class SessionTurn(BaseModel):
     feedback: Optional[str] = None
     participation_confirmed: Optional[bool] = None
     signal: Optional[ActivitySignalLog] = None
+    session_item: Optional[MusicSessionItem] = None
 
 
 class SessionLog(BaseModel):

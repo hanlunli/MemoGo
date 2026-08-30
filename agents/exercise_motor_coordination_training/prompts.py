@@ -13,12 +13,14 @@ AEROBIC_INSTRUCTION_PROMPT = ChatPromptTemplate.from_messages(
             "{stage} stage through an aerobic exercise session. Give exactly ONE short, "
             "concrete instruction for the {phase} phase of a {exercise_type} activity. Keep "
             "it under 20 words, one action only, and easy to follow for someone with memory "
-            "impairment.",
+            "impairment. Scale the pace, duration cue, or repetition count in your instruction "
+            "to the intensity level: 1 is very gentle and brief, 5 is the most sustained/vigorous "
+            "variation this patient can safely do.",
         ),
         (
             "human",
             "Patient name: {name}\nMobility level: {mobility_level}\n"
-            "Known physical limitations: {limitations}\n"
+            "Known physical limitations: {limitations}\nIntensity level: {intensity} out of 5\n"
             "Give one {phase} instruction for {exercise_type}.",
         ),
     ]
@@ -32,12 +34,14 @@ DUAL_TASK_MOTOR_PROMPT = ChatPromptTemplate.from_messages(
             "Alzheimer's patient at the {stage} stage. Give exactly ONE short instruction "
             "that asks the patient to do a motor activity ({motor_task}) together with a "
             "simple cognitive task. Weave the cognitive task naturally into the instruction. "
-            "Keep it under 25 words.",
+            "Keep it under 25 words. Scale the pace or repetition count to the intensity level: "
+            "1 is very gentle and brief, 5 is the most sustained/vigorous variation this patient "
+            "can safely do.",
         ),
         (
             "human",
             "Motor task: {motor_task}\nCognitive task to weave in: {cognitive_task}\n"
-            "Give one combined instruction.",
+            "Intensity level: {intensity} out of 5\nGive one combined instruction.",
         ),
     ]
 )

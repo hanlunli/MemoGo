@@ -768,13 +768,7 @@ def render_active_turn(prompt: str) -> None:
 
 
 def render_completed_session(step) -> None:
-    alert = (
-        getattr(step, "safety_alert", None)
-        or getattr(step, "hazard_alert", None)
-        or getattr(step, "urgent_alert", None)
-        or getattr(step, "routine_alert", None)
-        or getattr(step, "caregiver_alert", None)
-    )
+    alert = getattr(step, "alert", None)
     if alert:
         st.error(f"⚠️ Safety alert: {alert}")
     else:

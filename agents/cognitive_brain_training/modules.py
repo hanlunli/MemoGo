@@ -6,7 +6,7 @@ from typing import Optional
 
 from langchain_core.language_models.chat_models import BaseChatModel
 
-from .models import DiseaseStage, ExerciseItem, MemoryItem, ModuleId, PatientProfile
+from .models import DiseaseStage, ExerciseItem, MemoryItem, ModuleId, PatientProfile, ProgressTrend, SessionLog
 from .prompts import (
     ASSESSMENT_PROMPT,
     CAREGIVER_SUMMARY_PROMPT,
@@ -43,7 +43,9 @@ class RealityOrientationEngine:
     def __init__(self, llm: BaseChatModel):
         self._chain = REALITY_ORIENTATION_PROMPT | llm
 
-    def generate_prompt(self, patient: PatientProfile) -> str:
+    def generate_prompt(self, patient: PatientProfile) -> tuple[str, str]:
+        """Returns (prompt_text, orientation_domain) so the caller can log which domain
+        (date/location/person) this check actually tested."""
         domain = random.choice(ORIENTATION_DOMAINS)
         result = self._chain.invoke(
             {
@@ -54,7 +56,7 @@ class RealityOrientationEngine:
                 "context": ", ".join(patient.preferences) or "none provided",
             }
         )
-        return result.content
+        return result.content, domain
 
 
 class ReminiscenceSessionManager:
@@ -126,6 +128,30 @@ def adjust_difficulty(
     if correct is False:
         return max(1, difficulty - 1)
     return difficulty
+
+
+def build_progress_trends(session_log: SessionLog) -> list[ProgressTrend]:
+    """Summarizes this session's turns per cognitive domain (memory/attention/executive
+    function/language/orientation), since the session log is the only history this agent has
+    access to — there's no cross-session store to compute a true longitudinal trend from."""
+    turns_by_domain: dict[str, list] = {}
+    for turn in session_log.turns:
+        if turn.domain:
+            turns_by_domain.setdefault(turn.domain, []).append(turn)
+
+    trends = []
+    for domain, turns in turns_by_domain.items():
+        assessed = [turn.correct for turn in turns if turn.correct is not None]
+        accuracy = round(sum(1 for c in assessed if c) / len(assessed), 2) if assessed else 0.0
+        trends.append(
+            ProgressTrend(
+                domain=domain,
+                rolling_accuracy=accuracy,
+                rolling_engagement=session_log.engagement_score,
+                timeframe="this_session",
+            )
+        )
+    return trends
 
 
 def assess_engagement(response_text: Optional[str], response_latency_s: float) -> tuple[bool, float]:

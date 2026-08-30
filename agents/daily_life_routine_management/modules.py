@@ -197,7 +197,8 @@ class WakeUpOrientationOpener:
             stage=CognitiveDiseaseStage(patient.stage.value),
             preferences=[],
         )
-        return self._engine.generate_prompt(cognitive_patient)
+        prompt, _orientation_domain = self._engine.generate_prompt(cognitive_patient)
+        return prompt
 
 
 class CheckpointDeliveryEngine:

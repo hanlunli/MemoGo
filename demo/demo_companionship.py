@@ -52,9 +52,9 @@ def main() -> None:
 
     print("\n--- Session Log ---")
     print(step.session_log.model_dump_json(indent=2))
-    if step.caregiver_alert:
+    if step.alert:
         print("\n--- CAREGIVER ALERT ---")
-        print(step.caregiver_alert)
+        print(step.alert)
     elif step.caregiver_summary:
         print("\n--- Caregiver Summary ---")
         print(step.caregiver_summary)

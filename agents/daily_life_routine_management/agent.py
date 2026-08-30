@@ -36,7 +36,7 @@ class SessionStep:
     prompt: Optional[str] = None
     session_log: Optional[SessionLog] = None
     caregiver_summary: Optional[str] = None
-    routine_alert: Optional[str] = None
+    alert: Optional[str] = None
 
 
 class DailyLifeRoutineManagementAgent:
@@ -108,5 +108,5 @@ class DailyLifeRoutineManagementAgent:
             done=True,
             session_log=result["session_log"],
             caregiver_summary=result.get("caregiver_summary"),
-            routine_alert=result.get("routine_alert"),
+            alert=result.get("routine_alert"),
         )

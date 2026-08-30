@@ -142,6 +142,42 @@ def test_scheduled_session_runs_reminiscence_subflow_and_self_care_nudge(monkeyp
     assert result["caregiver_summary"] == "A full session done."
 
 
+def test_max_turns_cap_is_honored_even_mid_reminiscence_subflow(monkeypatch):
+    monkeypatch.setattr(modules.StageActivityEngine, "generate", _stub_activity_prompt)
+    monkeypatch.setattr(
+        modules.StageActivityAssessmentLayer,
+        "generate",
+        lambda self, prompt, response: StageActivityAssessment(engaged=True, feedback="Nice moment together."),
+    )
+    monkeypatch.setattr(modules.ReminiscenceSessionEngine, "generate_step", _stub_reminiscence_step)
+    monkeypatch.setattr(
+        modules.ReminiscenceEngagementAssessmentLayer,
+        "generate",
+        lambda self, prompt, response: ReminiscenceEngagementAssessment(engaged=True, feedback="Lovely."),
+    )
+    monkeypatch.setattr(modules.CaregiverReporter, "summarize", lambda self, session_json: "Session summary.")
+
+    graph = build_session_graph(ChatOllama(model="llama3.3"))
+    config = {"configurable": {"thread_id": "resilience-test-max-turns-mid-reminiscence"}}
+
+    # Step 0 is low_intensity_exercise, step 1 is the 4-step reminiscence sub-flow for a MILD
+    # patient — with max_turns=2, the cap should bite after the exercise turn plus one
+    # reminiscence sub-step, well before all 4 reminiscence steps run.
+    result = graph.invoke(_scheduled_start_state(max_turns=2), config=config)
+    assert result.get("__interrupt__")
+    result = graph.invoke(Command(resume={"response": "Enjoyed the walk", "latency": 3.0}), config=config)
+    assert result.get("__interrupt__")
+    result = graph.invoke(
+        Command(resume={"response": "Looked at the photos with interest", "latency": 3.0}), config=config
+    )
+
+    assert not result.get("__interrupt__")
+    session_log = result["session_log"]
+    assert len(session_log.turns) == 2
+    assert session_log.ended_reason == "max_turns_reached"
+    assert session_log.reminiscence_session_conducted is False
+
+
 def test_distortion_session_settles_and_summarizes(monkeypatch):
     monkeypatch.setattr(modules.DistortionResponseCoach, "generate", _stub_distortion_prompt)
     monkeypatch.setattr(

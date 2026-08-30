@@ -12,6 +12,7 @@ from langgraph.types import Command
 from .graph import build_session_graph
 from .llm_logging import LLMUsageLoggingHandler
 from .models import PatientProfile, SessionLog
+from .modules import STAGE_INTENSITY_CEILING
 
 Provider = Literal["ollama", "gemini"]
 
@@ -36,7 +37,7 @@ class SessionStep:
     prompt: Optional[str] = None
     session_log: Optional[SessionLog] = None
     caregiver_summary: Optional[str] = None
-    safety_alert: Optional[str] = None
+    alert: Optional[str] = None
 
 
 class ExerciseMotorCoordinationTrainingAgent:
@@ -67,7 +68,7 @@ class ExerciseMotorCoordinationTrainingAgent:
             "max_turns": max_turns,
             "target_duration_min": target_duration_min,
             "turn_count": 0,
-            "intensity": starting_intensity,
+            "intensity": min(starting_intensity, STAGE_INTENSITY_CEILING[patient.stage]),
             "fatigue_detected": False,
         }
         result = self._graph.invoke(initial_state, config=config)
@@ -90,5 +91,5 @@ class ExerciseMotorCoordinationTrainingAgent:
             done=True,
             session_log=result["session_log"],
             caregiver_summary=result.get("caregiver_summary"),
-            safety_alert=result.get("safety_alert"),
+            alert=result.get("safety_alert"),
         )

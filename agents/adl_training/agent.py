@@ -36,7 +36,7 @@ class SessionStep:
     prompt: Optional[str] = None
     session_log: Optional[SessionLog] = None
     caregiver_summary: Optional[str] = None
-    hazard_alert: Optional[str] = None
+    alert: Optional[str] = None
 
 
 class ADLTrainingAgent:
@@ -86,5 +86,5 @@ class ADLTrainingAgent:
             done=True,
             session_log=result["session_log"],
             caregiver_summary=result.get("caregiver_summary"),
-            hazard_alert=result.get("hazard_alert"),
+            alert=result.get("hazard_alert"),
         )

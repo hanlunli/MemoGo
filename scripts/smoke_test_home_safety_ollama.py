@@ -68,7 +68,7 @@ def run_incident_smoke_test() -> None:
     print(step.session_log.model_dump_json(indent=2))
 
     assert step.session_log.emergency_incident is True, "fire/gas incidents must be flagged as emergencies"
-    assert step.safety_alert, "an emergency incident must produce a safety alert"
+    assert step.alert, "an emergency incident must produce a safety alert"
 
 
 def main() -> None:

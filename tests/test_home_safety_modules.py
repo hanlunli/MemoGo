@@ -1,4 +1,12 @@
-from agents.home_safety_protection.models import ChecklistStatus, HazardType, ModuleId, Severity, WanderingRiskLevel
+from agents.home_safety_protection.models import (
+    ChecklistStatus,
+    DiseaseStage,
+    HazardType,
+    MobilityLevel,
+    ModuleId,
+    Severity,
+    WanderingRiskLevel,
+)
 from agents.home_safety_protection.modules import (
     assess_incident_acknowledgment,
     build_checklist_sequence,
@@ -37,9 +45,36 @@ def test_build_checklist_sequence_unknown_room_yields_no_items():
     assert build_checklist_sequence(["Garage"]) == []
 
 
-def test_classify_incident_severity_is_always_emergency():
-    for hazard_type in HazardType:
+def test_build_checklist_sequence_escalates_everything_at_moderate_and_severe_stage():
+    items = build_checklist_sequence(["Kitchen"], stage=DiseaseStage.MODERATE)
+    assert all(item.is_high_priority for item in items)
+    items = build_checklist_sequence(["Kitchen"], stage=DiseaseStage.SEVERE)
+    assert all(item.is_high_priority for item in items)
+
+
+def test_build_checklist_sequence_leaves_low_priority_items_alone_at_mild_stage():
+    items = build_checklist_sequence(["Kitchen"], stage=DiseaseStage.MILD)
+    assert any(not item.is_high_priority for item in items)
+
+
+def test_build_checklist_sequence_escalates_fall_items_for_reduced_mobility():
+    items = build_checklist_sequence(["Bathroom"], mobility_level=MobilityLevel.NEEDS_SUPERVISION)
+    fall_items = [item for item in items if item.hazard_type == HazardType.FALL]
+    assert fall_items and all(item.is_high_priority for item in fall_items)
+
+
+def test_build_checklist_sequence_does_not_escalate_falls_for_independent_mobility():
+    items = build_checklist_sequence(["Bathroom"], mobility_level=MobilityLevel.INDEPENDENT)
+    assert any(item.hazard_type == HazardType.FALL and not item.is_high_priority for item in items)
+
+
+def test_classify_incident_severity_is_emergency_for_fire_gas_wandering_and_medication():
+    for hazard_type in (HazardType.FIRE_GAS, HazardType.WANDERING, HazardType.MEDICATION_CHEMICAL_ACCESS):
         assert classify_incident_severity(hazard_type) == Severity.EMERGENCY
+
+
+def test_classify_incident_severity_is_caution_for_fall():
+    assert classify_incident_severity(HazardType.FALL) == Severity.CAUTION
 
 
 def test_escalate_risk_level_raises_on_wandering():
@@ -103,6 +138,12 @@ def test_assess_incident_acknowledgment_vague_reply_still_escalates():
     acknowledged, escalate = assess_incident_acknowledgment("ok", 5.0)
     assert acknowledged is False
     assert escalate is True
+
+
+def test_assess_incident_acknowledgment_on_my_way_is_in_progress_not_resolved_or_escalated():
+    acknowledged, escalate = assess_incident_acknowledgment("On my way now", 5.0)
+    assert acknowledged is False
+    assert escalate is False
 
 
 def test_existing_adl_room_labels_returns_task_room_labels():

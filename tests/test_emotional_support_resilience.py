@@ -7,8 +7,10 @@ from agents.emotional_support_comfort.models import DiseaseStage, OutburstEvent,
 from agents.emotional_support_comfort.prompts import DeescalationAssessment, HabitAssessment
 
 
-def _make_patient() -> PatientProfile:
-    return PatientProfile(patient_id="t1", name="Test", stage=DiseaseStage.MILD)
+def _make_patient(**overrides) -> PatientProfile:
+    defaults = dict(patient_id="t1", name="Test", stage=DiseaseStage.MILD)
+    defaults.update(overrides)
+    return PatientProfile(**defaults)
 
 
 def _prevention_start_state(max_turns: int = 1) -> dict:
@@ -21,9 +23,9 @@ def _prevention_start_state(max_turns: int = 1) -> dict:
     }
 
 
-def _outburst_start_state(max_turns: int = 2) -> dict:
+def _outburst_start_state(max_turns: int = 2, patient: PatientProfile = None) -> dict:
     return {
-        "patient": _make_patient(),
+        "patient": patient or _make_patient(),
         "trigger_type": "event_driven",
         "outburst_event": OutburstEvent(preceding_event="unfamiliar visitor arrived", symptoms_observed=["crying"]),
         "max_turns": max_turns,
@@ -134,6 +136,31 @@ def test_outburst_session_escalates_after_attempts_exhausted(monkeypatch):
     assert result["caregiver_summary"] is None
     assert result["session_log"].journal_entry is not None
     assert result["session_log"].journal_entry.preceding_event == "unfamiliar visitor arrived"
+    # The escalation flag must land on the turn that actually triggered it, not just the
+    # session-level summary field.
+    assert result["session_log"].turns[-1].signal.escalated_to_contact is True
+
+
+def test_outburst_session_flags_a_matching_known_trigger_in_the_journal(monkeypatch):
+    monkeypatch.setattr(modules.DeescalationCoach, "render_redirection_content", _stub_redirection_content)
+    monkeypatch.setattr(modules.DeescalationCoach, "generate", _stub_deescalation_prompt)
+    monkeypatch.setattr(
+        modules.DeescalationAssessmentLayer,
+        "generate",
+        lambda self, prompt, response: DeescalationAssessment(calmed=True, feedback="Great, she's settled."),
+    )
+    monkeypatch.setattr(modules.CaregiverReporter, "summarize", lambda self, session_json: "All calm now.")
+
+    graph = build_session_graph(ChatOllama(model="llama3.3"))
+    config = {"configurable": {"thread_id": "resilience-test-outburst-known-trigger"}}
+
+    patient = _make_patient(known_triggers=["unfamiliar visitors"])
+    graph.invoke(_outburst_start_state(max_turns=2, patient=patient), config=config)
+    result = graph.invoke(
+        Command(resume={"response": "She is settled and listening to the music now", "latency": 8.0}), config=config
+    )
+
+    assert result["session_log"].journal_entry.matched_known_trigger == "unfamiliar visitors"
 
 
 def test_outburst_session_survives_deescalation_assessment_failure(monkeypatch):

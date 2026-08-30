@@ -107,23 +107,25 @@ def build_session_graph(llm: BaseChatModel):
         module = state["module"]
         turn_count = state.get("turn_count", 0)
 
+        intensity = state.get("intensity", 2)
+
         if module == ModuleId.AEROBIC:
             exercise_type = state.get("exercise_type") or _select_aerobic_type(patient)
             phase = AEROBIC_PHASES[min(turn_count, len(AEROBIC_PHASES) - 1)]
-            prompt = aerobic_engine.generate_instruction(patient, exercise_type, phase)
+            prompt = aerobic_engine.generate_instruction(patient, exercise_type, phase, intensity)
             has_cognitive_task = False
             session_item = ExerciseSessionItem(
                 exercise_type="aerobic",
                 motor_task=exercise_type,
                 cognitive_task=None,
                 target_duration_min=state.get("target_duration_min", 30),
-                intensity_level=state.get("intensity", 2),
+                intensity_level=intensity,
             )
         else:
             motor_task = state.get("motor_task") or random.choice(MOTOR_TASKS)
             include_cognitive_task = turn_count > 0
             prompt, cognitive_task = dual_task_coordinator.generate_instruction(
-                patient, motor_task, include_cognitive_task
+                patient, motor_task, include_cognitive_task, intensity
             )
             has_cognitive_task = cognitive_task is not None
             session_item = ExerciseSessionItem(
@@ -131,7 +133,7 @@ def build_session_graph(llm: BaseChatModel):
                 motor_task=motor_task,
                 cognitive_task=cognitive_task,
                 target_duration_min=state.get("target_duration_min", 20),
-                intensity_level=state.get("intensity", 2),
+                intensity_level=intensity,
             )
 
         return {
@@ -184,7 +186,10 @@ def build_session_graph(llm: BaseChatModel):
         session_log.engagement_score = engagement_score
         session_log.fatigue_detected = fatigue_detected
         session_log.safety_incident = is_safety_stop(incident_flag)
-        session_log.duration_achieved_min = round(session_log.duration_achieved_min + slice_min, 1)
+        if not is_safety_stop(incident_flag):
+            # A fall/near-fall/distress report means this turn's activity was interrupted, not
+            # completed — crediting the full slice would overstate duration actually achieved.
+            session_log.duration_achieved_min = round(session_log.duration_achieved_min + slice_min, 1)
 
         return {
             "intensity": new_intensity,

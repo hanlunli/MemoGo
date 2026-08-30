@@ -24,10 +24,12 @@ FRUSTRATION_KEYWORDS = (
     "can't do this",
     "cannot do this",
     "frustrated",
-    "stop",
+    "want to stop",
+    "please stop",
     "leave me alone",
-    "don't want",
-    "no more",
+    "don't want to do this",
+    "don't want to continue",
+    "no more of this",
     "hate this",
 )
 
@@ -35,7 +37,7 @@ HAZARD_KEYWORDS: dict[IncidentFlag, tuple[str, ...]] = {
     IncidentFlag.BURN: ("burned", "burn", "scalded", "hot water spilled"),
     IncidentFlag.CUT: ("cut myself", "cut my", "bleeding"),
     IncidentFlag.FALL: ("fell", "fall", "on the floor", "on the ground"),
-    IncidentFlag.DISTRESS: ("dizzy", "chest pain", "chest hurts", "can't breathe", "cannot breathe", "pain"),
+    IncidentFlag.DISTRESS: ("dizzy", "chest pain", "chest hurts", "can't breathe", "cannot breathe", "in pain"),
 }
 
 ORIENTATION_STEP = "__orientation_check__"
@@ -164,7 +166,8 @@ class MorningOrientationOpener:
             stage=CognitiveDiseaseStage(patient.stage.value),
             preferences=list(patient.preferred_adl_tasks),
         )
-        return self._engine.generate_prompt(cognitive_patient)
+        prompt, _orientation_domain = self._engine.generate_prompt(cognitive_patient)
+        return prompt
 
 
 class EnvironmentalCueEngine:

@@ -153,7 +153,7 @@ def build_session_graph(llm: BaseChatModel):
 
         if state.get("is_deviation_turn"):
             severity = state["severity"]
-            _, needs_followup = assess_deviation_acknowledgment(response_text, latency)
+            acknowledged, needs_followup = assess_deviation_acknowledgment(response_text, latency)
 
             try:
                 assessment = deviation_assessment_layer.generate(state["current_prompt"], response_text or "")
@@ -163,16 +163,20 @@ def build_session_graph(llm: BaseChatModel):
                     resolved=None, feedback="Thank you — this has been logged and flagged for follow-up."
                 )
 
+            # A vague or absent reply must never be read as the deviation being resolved, no matter
+            # what the LLM assessor guessed — the deterministic acknowledgment check overrides it.
+            resolved = assessment.resolved if acknowledged else False
+
             session_log.turns.append(
                 SessionTurn(
                     module=ModuleId.DEVIATION_RESPONSE,
                     prompt=state["current_prompt"],
                     caregiver_response=response_text,
                     feedback=assessment.feedback,
-                    checkpoint_resolved=assessment.resolved,
+                    checkpoint_resolved=resolved,
                     signal=RoutineSignalLog(
-                        status=resolve_checkpoint_status(assessment.resolved),
-                        resolved=assessment.resolved,
+                        status=resolve_checkpoint_status(resolved),
+                        resolved=resolved,
                         needs_followup=needs_followup,
                     ),
                 )
@@ -192,8 +196,14 @@ def build_session_graph(llm: BaseChatModel):
         )
 
         if checkpoint.checkpoint_type == CheckpointType.WAKE_UP:
-            feedback = "Thanks for checking in with me!"
-            resolved: Optional[bool] = True
+            # Only count the orientation check-in as completed if someone actually responded —
+            # otherwise it must stay pending, not silently marked done.
+            if response_text:
+                feedback = "Thanks for checking in with me!"
+                resolved: Optional[bool] = True
+            else:
+                feedback = "No response yet — I'll check in again shortly."
+                resolved = None
         else:
             try:
                 assessment = checkpoint_assessment_layer.generate(state["current_prompt"], response_text or "")
@@ -241,7 +251,12 @@ def build_session_graph(llm: BaseChatModel):
         module = state["module"]
 
         if module == ModuleId.DEVIATION_RESPONSE:
-            session_log.ended_reason = "major_deviation" if session_log.major_deviation else "deviation_closed"
+            if session_log.major_deviation:
+                session_log.ended_reason = "major_deviation"
+            elif session_log.needs_followup:
+                session_log.ended_reason = "unresolved_after_attempts"
+            else:
+                session_log.ended_reason = "deviation_closed"
         elif state.get("consecutive_no_response_count", 0) >= 2:
             session_log.ended_reason = "no_response_escalation"
         elif state.get("checkpoint_index", 0) >= len(state.get("checkpoints", [])):
@@ -253,6 +268,7 @@ def build_session_graph(llm: BaseChatModel):
             session_log.missed_medication_supervision
             or session_log.double_meal_prevented
             or (module == ModuleId.DEVIATION_RESPONSE and session_log.major_deviation)
+            or session_log.needs_followup
             or session_log.ended_reason == "no_response_escalation"
         )
 
@@ -270,6 +286,10 @@ def build_session_graph(llm: BaseChatModel):
 
     def route_after_adjustment(state: SessionState) -> str:
         if state["module"] == ModuleId.DEVIATION_RESPONSE:
+            # Keep checking in on an unacknowledged deviation for as long as max_turns allows,
+            # instead of closing after a single unanswered/ambiguous reply.
+            if state["session_log"].needs_followup and state.get("turn_count", 0) < state.get("max_turns", 2):
+                return "prepare_content"
             return "session_close"
         if (
             state.get("consecutive_no_response_count", 0) >= 2

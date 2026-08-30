@@ -210,7 +210,34 @@ def resolve_checklist_status(addressed: Optional[bool]) -> str:
     return "pending"
 
 
-def build_journal_entry(event: OutburstEvent, intervention_used: str, outcome: str, started_at: str) -> SundowningJournalEntry:
+def _significant_words(text: str) -> set[str]:
+    # Strip a trailing "s" as a light singular/plural normalization (e.g. "visitor" vs
+    # "visitors") and drop short filler words so overlap comparisons key on meaningful terms.
+    return {word.rstrip("s") for word in text.lower().split() if len(word) > 3}
+
+
+def matches_known_trigger(event: OutburstEvent, patient: PatientProfile) -> Optional[str]:
+    """Checks the outburst's reported context against the patient's known/confirmed triggers, so a
+    recognized antecedent is surfaced to the caregiver in the journal instead of being logged as if
+    every episode were novel — feeding the personalization profile's known_triggers back into the
+    journal per the sundowning-journal-trigger-tracker's avoid-list/correlation behavior."""
+    candidate_words: set[str] = set()
+    for candidate in (event.preceding_event, event.environmental_factor, event.food_or_drink_intake):
+        if candidate:
+            candidate_words |= _significant_words(candidate)
+    for trigger in patient.known_triggers:
+        if _significant_words(trigger) & candidate_words:
+            return trigger
+    return None
+
+
+def build_journal_entry(
+    event: OutburstEvent,
+    intervention_used: str,
+    outcome: str,
+    started_at: str,
+    matched_known_trigger: Optional[str] = None,
+) -> SundowningJournalEntry:
     started = datetime.fromisoformat(started_at)
     return SundowningJournalEntry(
         date=started.date().isoformat(),
@@ -221,6 +248,7 @@ def build_journal_entry(event: OutburstEvent, intervention_used: str, outcome: s
         symptoms_observed=event.symptoms_observed,
         intervention_used=intervention_used,
         outcome=outcome,
+        matched_known_trigger=matched_known_trigger,
     )
 
 

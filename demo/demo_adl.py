@@ -39,9 +39,9 @@ def main() -> None:
 
     print("\n--- Session Log ---")
     print(step.session_log.model_dump_json(indent=2))
-    if step.hazard_alert:
+    if step.alert:
         print("\n--- HAZARD ALERT ---")
-        print(step.hazard_alert)
+        print(step.alert)
     elif step.caregiver_summary:
         print("\n--- Caregiver Summary ---")
         print(step.caregiver_summary)

@@ -126,6 +126,34 @@ def test_incident_session_escalates_to_contact_on_no_ack(monkeypatch):
     assert result["session_log"].device_recommendation is not None
 
 
+def test_incident_session_keeps_checking_in_while_caregiver_is_en_route(monkeypatch):
+    monkeypatch.setattr(modules.IncidentTriageEngine, "generate", _stub_incident_prompt)
+    monkeypatch.setattr(
+        modules.IncidentAssessmentLayer,
+        "generate",
+        lambda self, prompt, response: IncidentAssessment(resolved=None, feedback="Noted, thank you."),
+    )
+    monkeypatch.setattr(modules.CaregiverReporter, "summarize", lambda self, session_json: "All handled.")
+
+    graph = build_session_graph(ChatOllama(model="llama3.3"))
+    config = {"configurable": {"thread_id": "resilience-test-incident-en-route"}}
+
+    result = graph.invoke(_incident_start_state(), config=config)
+    assert result.get("__interrupt__")
+    # "On my way" is engaged but not yet a confirmed mitigation, so with max_turns=2 the session
+    # should check in again instead of closing right after the first reply.
+    result = graph.invoke(Command(resume={"response": "On my way now", "latency": 3.0}), config=config)
+    assert result.get("__interrupt__")
+    result = graph.invoke(Command(resume={"response": "Turned off the stove", "latency": 3.0}), config=config)
+
+    assert not result.get("__interrupt__")
+    session_log = result["session_log"]
+    assert len(session_log.turns) == 2
+    assert session_log.turns[0].caregiver_response == "On my way now"
+    assert session_log.turns[1].caregiver_response == "Turned off the stove"
+    assert session_log.escalated_to_contact is False
+
+
 def test_incident_session_survives_incident_assessment_failure(monkeypatch):
     monkeypatch.setattr(modules.IncidentTriageEngine, "generate", _stub_incident_prompt)
     monkeypatch.setattr(modules.IncidentAssessmentLayer, "generate", _raise)

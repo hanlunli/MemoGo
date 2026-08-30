@@ -132,6 +132,10 @@ def test_detect_hazard_incident_none_when_clean():
     assert detect_hazard_incident("Finished folding the clothes") == IncidentFlag.NONE
 
 
+def test_detect_hazard_incident_ignores_bare_pain_mention():
+    assert detect_hazard_incident("No pain at all, that was easy") == IncidentFlag.NONE
+
+
 def test_detect_hazard_incident_none_when_no_response():
     assert detect_hazard_incident(None) == IncidentFlag.NONE
 
@@ -162,6 +166,11 @@ def test_assess_frustration_quick_reply_is_engaged():
     frustrated, score = assess_frustration("done", 5.0)
     assert frustrated is False
     assert score > 0.9
+
+
+def test_assess_frustration_ignores_unrelated_no_more_and_don_t_want():
+    frustrated, _ = assess_frustration("There's no more toothpaste, I don't want to run out", 5.0)
+    assert frustrated is False
 
 
 def test_enforce_hazard_floor_raises_low_tier():

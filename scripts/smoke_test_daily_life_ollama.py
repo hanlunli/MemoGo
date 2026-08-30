@@ -77,7 +77,7 @@ def run_deviation_smoke_test() -> None:
     print(step.session_log.model_dump_json(indent=2))
 
     assert step.session_log.major_deviation is True, "environment changes must be flagged as major deviations"
-    assert step.routine_alert, "a major deviation must produce a routine alert"
+    assert step.alert, "a major deviation must produce a routine alert"
 
 
 def main() -> None:

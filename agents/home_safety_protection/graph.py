@@ -81,6 +81,7 @@ class SessionState(TypedDict, total=False):
     turn_count: int
     max_turns: int
     wandering_risk_level: WanderingRiskLevel
+    acknowledged: bool
     escalated_to_contact: bool
     session_log: SessionLog
     caregiver_summary: Optional[str]
@@ -116,7 +117,7 @@ def build_session_graph(llm: BaseChatModel):
             }
 
         module = resolve_module(state.get("schedule_activity", ""))
-        steps = build_checklist_sequence(patient.home_rooms)
+        steps = build_checklist_sequence(patient.home_rooms, patient.stage, patient.mobility_level)
         session_log = SessionLog(
             patient_id=patient.patient_id,
             module=module,
@@ -183,6 +184,7 @@ def build_session_graph(llm: BaseChatModel):
             return {
                 "session_log": session_log,
                 "wandering_risk_level": new_risk,
+                "acknowledged": acknowledged,
                 "escalated_to_contact": escalate_to_contact,
                 "step_index": state.get("step_index", 0) + 1,
                 "turn_count": state.get("turn_count", 0) + 1,
@@ -241,6 +243,12 @@ def build_session_graph(llm: BaseChatModel):
 
     def route_after_adjustment(state: SessionState) -> str:
         if state["module"] == ModuleId.INCIDENT_RESPONSE:
+            # Keep checking in while the caregiver is engaged but the hazard isn't confirmed
+            # mitigated yet (e.g. "on my way") — close immediately once acknowledged, once it's
+            # escalated past the caregiver, or once the turn budget runs out.
+            still_in_progress = not state.get("acknowledged") and not state.get("escalated_to_contact")
+            if still_in_progress and state.get("turn_count", 0) < state.get("max_turns", 2):
+                return "prepare_content"
             return "session_close"
         if state.get("step_index", 0) >= len(state.get("steps", [])) or state.get("turn_count", 0) >= state.get(
             "max_turns", 8

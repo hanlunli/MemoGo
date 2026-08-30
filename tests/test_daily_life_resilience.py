@@ -90,6 +90,39 @@ def test_checkpoint_session_survives_assessment_failure(monkeypatch):
     assert result["caregiver_summary"] == "All good."
 
 
+def test_wake_up_checkpoint_is_not_marked_completed_without_a_response(monkeypatch):
+    monkeypatch.setattr(
+        modules.WakeUpOrientationOpener, "generate", lambda self, patient: "Good morning! What's today's date?"
+    )
+    monkeypatch.setattr(modules.CaregiverReporter, "summarize", lambda self, session_json: "All good.")
+
+    graph = build_session_graph(ChatOllama(model="llama3.3"))
+    config = {"configurable": {"thread_id": "resilience-test-wake-up-no-response"}}
+
+    graph.invoke(_checkpoint_start_state("08:30-09:30 Outdoor aerobic exercise"), config=config)
+    result = graph.invoke(Command(resume={"response": "", "latency": 95.0}), config=config)
+
+    assert result["session_log"].turns[0].checkpoint_resolved is None
+    assert result["session_log"].checkpoint_status_counts.get("completed") is None
+    assert result["session_log"].checkpoint_status_counts.get("pending") == 1
+
+
+def test_wake_up_checkpoint_completes_with_a_response(monkeypatch):
+    monkeypatch.setattr(
+        modules.WakeUpOrientationOpener, "generate", lambda self, patient: "Good morning! What's today's date?"
+    )
+    monkeypatch.setattr(modules.CaregiverReporter, "summarize", lambda self, session_json: "All good.")
+
+    graph = build_session_graph(ChatOllama(model="llama3.3"))
+    config = {"configurable": {"thread_id": "resilience-test-wake-up-with-response"}}
+
+    graph.invoke(_checkpoint_start_state("08:30-09:30 Outdoor aerobic exercise"), config=config)
+    result = graph.invoke(Command(resume={"response": "It's Tuesday!", "latency": 3.0}), config=config)
+
+    assert result["session_log"].turns[0].checkpoint_resolved is True
+    assert result["session_log"].checkpoint_status_counts.get("completed") == 1
+
+
 def test_medication_checkpoint_requires_explicit_supervision_confirmation(monkeypatch):
     monkeypatch.setattr(modules.CheckpointDeliveryEngine, "generate", _stub_checkpoint_prompt)
     monkeypatch.setattr(
@@ -131,6 +164,57 @@ def test_deviation_session_flags_major_environment_change(monkeypatch):
     assert result["session_log"].ended_reason == "major_deviation"
     assert result["routine_alert"] == "Please monitor closely."
     assert result["caregiver_summary"] is None
+
+
+def test_deviation_session_never_auto_resolves_on_vague_reply_even_if_llm_says_resolved(monkeypatch):
+    monkeypatch.setattr(modules.DeviationResponseEngine, "generate", _stub_deviation_prompt)
+    monkeypatch.setattr(
+        modules.DeviationAssessmentLayer,
+        "generate",
+        lambda self, prompt, response: DeviationAssessment(resolved=True, feedback="Sounds handled."),
+    )
+    monkeypatch.setattr(modules.CaregiverReporter, "routine_alert", lambda self, session_json: "Please follow up.")
+
+    graph = build_session_graph(ChatOllama(model="llama3.3"))
+    config = {"configurable": {"thread_id": "resilience-test-deviation-vague-reply-not-auto-resolved"}}
+
+    graph.invoke(_deviation_start_state(), config=config)
+    # "ok" hits no ACK or NO_ACK keyword, so the deterministic check can't confirm acknowledgment —
+    # the LLM assessor guessing resolved=True must not override that.
+    result = graph.invoke(Command(resume={"response": "ok", "latency": 2.0}), config=config)
+
+    assert result["session_log"].turns[0].checkpoint_resolved is False
+    assert result["session_log"].needs_followup is True
+
+
+def test_deviation_session_keeps_checking_in_while_unacknowledged_within_max_turns(monkeypatch):
+    monkeypatch.setattr(modules.DeviationResponseEngine, "generate", _stub_deviation_prompt)
+    monkeypatch.setattr(
+        modules.DeviationAssessmentLayer,
+        "generate",
+        lambda self, prompt, response: DeviationAssessment(resolved=None, feedback="Noted, thank you."),
+    )
+    monkeypatch.setattr(
+        modules.CaregiverReporter, "routine_alert", lambda self, session_json: "This still needs your attention."
+    )
+
+    graph = build_session_graph(ChatOllama(model="llama3.3"))
+    config = {"configurable": {"thread_id": "resilience-test-deviation-unacknowledged"}}
+
+    result = graph.invoke(_deviation_start_state(), config=config)
+    assert result.get("__interrupt__")
+    # A vague reply never hits an ACK keyword, so needs_followup stays True and, with max_turns=2,
+    # the session should check in a second time instead of closing after the first turn.
+    result = graph.invoke(Command(resume={"response": "not sure yet", "latency": 2.0}), config=config)
+    assert result.get("__interrupt__")
+    result = graph.invoke(Command(resume={"response": "still not sure", "latency": 2.0}), config=config)
+
+    assert not result.get("__interrupt__")
+    session_log = result["session_log"]
+    assert len(session_log.turns) == 2
+    assert session_log.needs_followup is True
+    assert session_log.ended_reason == "unresolved_after_attempts"
+    assert result["routine_alert"] == "This still needs your attention."
 
 
 def test_deviation_session_survives_assessment_failure(monkeypatch):

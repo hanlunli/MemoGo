@@ -38,6 +38,7 @@ from .modules import (
     build_journal_entry,
     build_prevention_sequence,
     classify_outburst_severity,
+    matches_known_trigger,
     resolve_checklist_status,
     select_redirection,
 )
@@ -68,7 +69,6 @@ _CHECKPOINT_SERDE = JsonPlusSerializer(
 class SessionState(TypedDict, total=False):
     patient: PatientProfile
     trigger_type: str
-    schedule_activity: Optional[str]
     outburst_event: Optional[OutburstEvent]
     module: ModuleId
     severity: Optional[OutburstSeverity]
@@ -267,6 +267,11 @@ def build_session_graph(llm: BaseChatModel):
             session_log.outburst_active = calmed is not True
             session_log.escalated_to_contact = calmed is not True
 
+            # Backfill the escalation flag onto the turn that actually triggered it — otherwise
+            # every per-turn signal reads False even on the escalating turn.
+            if session_log.turns and session_log.turns[-1].signal is not None:
+                session_log.turns[-1].signal.escalated_to_contact = session_log.escalated_to_contact
+
             if calmed is True:
                 session_log.ended_reason = "deescalated"
                 outcome = f"De-escalated after {attempts} attempt(s)."
@@ -279,6 +284,7 @@ def build_session_graph(llm: BaseChatModel):
                 intervention_used=", ".join(session_log.redirection_history) or "none",
                 outcome=outcome,
                 started_at=session_log.started_at,
+                matched_known_trigger=matches_known_trigger(state["outburst_event"], state["patient"]),
             )
 
             try:

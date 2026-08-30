@@ -7,7 +7,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 
 from agents.cognitive_brain_training.models import MemoryItem
 
-from .models import DiseaseStage, IncidentFlag, ModuleId, PatientProfile, SocialContact
+from .models import DiseaseStage, FineMotorLevel, IncidentFlag, ModuleId, PatientProfile, SocialContact
 from .prompts import (
     CAREGIVER_SUMMARY_PROMPT,
     CRAFT_STEP_INSTRUCTION_PROMPT,
@@ -73,6 +73,27 @@ CRAFT_TASKS: dict[str, list[tuple[str, bool]]] = {
 }
 
 CRAFT_ACTIVITY_TYPES = tuple(CRAFT_TASKS.keys())
+
+# The least able fine-motor level each craft is still appropriate for — bead stringing, origami,
+# and paper cutting need real dexterity/precision, so NEEDS_ASSIST patients are steered to the
+# low-dexterity activities instead.
+CRAFT_FINE_MOTOR_FLOOR: dict[str, FineMotorLevel] = {
+    "bead stringing": FineMotorLevel.MILD_TREMOR,
+    "origami": FineMotorLevel.MILD_TREMOR,
+    "paper cutting": FineMotorLevel.MILD_TREMOR,
+    "watering plants": FineMotorLevel.NEEDS_ASSIST,
+    "drawing": FineMotorLevel.NEEDS_ASSIST,
+}
+
+_FINE_MOTOR_ORDER = (FineMotorLevel.INDEPENDENT, FineMotorLevel.MILD_TREMOR, FineMotorLevel.NEEDS_ASSIST)
+
+CRAFT_MATERIALS: dict[str, tuple[str, ...]] = {
+    "bead stringing": ("beads", "string", "elastic cord"),
+    "origami": ("paper",),
+    "watering plants": ("soil", "water"),
+    "drawing": ("crayons", "paper"),
+    "paper cutting": ("paper", "safety scissors"),
+}
 
 DEFAULT_CONVERSATION_TOPICS = ("a favorite childhood memory", "the weather today", "a favorite meal")
 
@@ -193,9 +214,32 @@ def resolve_module(schedule_activity: str) -> ModuleId:
     return ModuleId.CRAFTS_HORTICULTURE
 
 
+def _craft_suitable_for_fine_motor(activity_type: str, fine_motor_level: FineMotorLevel) -> bool:
+    floor = CRAFT_FINE_MOTOR_FLOOR.get(activity_type, FineMotorLevel.INDEPENDENT)
+    return _FINE_MOTOR_ORDER.index(fine_motor_level) <= _FINE_MOTOR_ORDER.index(floor)
+
+
+def _craft_uses_sensitive_material(activity_type: str, patient: PatientProfile) -> bool:
+    if not patient.material_sensitivities:
+        return False
+    materials = [m.lower() for m in CRAFT_MATERIALS.get(activity_type, ())]
+    return any(
+        sensitivity.lower() in material or material in sensitivity.lower()
+        for sensitivity in patient.material_sensitivities
+        for material in materials
+    )
+
+
 def select_craft_activity(patient: PatientProfile) -> str:
-    preferred = [c for c in patient.preferred_crafts if c in CRAFT_TASKS]
-    return random.choice(preferred) if preferred else random.choice(CRAFT_ACTIVITY_TYPES)
+    # Material sensitivities are a hard safety filter; fine-motor fit is only relaxed if honoring
+    # it would leave no material-safe option at all.
+    material_safe = [c for c in CRAFT_ACTIVITY_TYPES if not _craft_uses_sensitive_material(c, patient)] or list(
+        CRAFT_ACTIVITY_TYPES
+    )
+    fine_motor_safe = [c for c in material_safe if _craft_suitable_for_fine_motor(c, patient.fine_motor_level)]
+    candidates = fine_motor_safe or material_safe
+    preferred = [c for c in patient.preferred_crafts if c in candidates]
+    return random.choice(preferred) if preferred else random.choice(candidates)
 
 
 def build_craft_step_sequence(activity_type: str, stage: DiseaseStage) -> list[tuple[str, bool]]:

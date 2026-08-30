@@ -36,7 +36,7 @@ class SessionStep:
     prompt: Optional[str] = None
     session_log: Optional[SessionLog] = None
     caregiver_summary: Optional[str] = None
-    safety_alert: Optional[str] = None
+    alert: Optional[str] = None
 
 
 class HomeSafetyProtectionAgent:
@@ -107,5 +107,5 @@ class HomeSafetyProtectionAgent:
             done=True,
             session_log=result["session_log"],
             caregiver_summary=result.get("caregiver_summary"),
-            safety_alert=result.get("safety_alert"),
+            alert=result.get("safety_alert"),
         )

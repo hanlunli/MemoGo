@@ -10,6 +10,7 @@ from agents.emotional_support_comfort.modules import (
     assess_calming_signal,
     build_prevention_sequence,
     classify_outburst_severity,
+    matches_known_trigger,
     resolve_checklist_status,
     select_independence_task,
     select_redirection,
@@ -94,6 +95,18 @@ def test_select_redirection_skips_already_used_types():
     first = select_redirection(patient, used=[])
     second = select_redirection(patient, used=[first])
     assert second != first
+
+
+def test_matches_known_trigger_flags_a_matching_preceding_event():
+    patient = _make_patient(known_triggers=["unfamiliar visitors"])
+    event = OutburstEvent(preceding_event="An unfamiliar visitor arrived at the door")
+    assert matches_known_trigger(event, patient) == "unfamiliar visitors"
+
+
+def test_matches_known_trigger_none_when_no_overlap():
+    patient = _make_patient(known_triggers=["unfamiliar visitors"])
+    event = OutburstEvent(preceding_event="Woke up from a nap")
+    assert matches_known_trigger(event, patient) is None
 
 
 def test_resolve_checklist_status():

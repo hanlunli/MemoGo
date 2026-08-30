@@ -15,6 +15,7 @@ from agents.companionship.modules import (
     is_sensitive_topic,
     resolve_engagement_status,
     resolve_reminiscence_theme,
+    sanitize_biography_for_reminiscence,
     select_self_care_nudge,
 )
 
@@ -65,6 +66,19 @@ def test_resolve_reminiscence_theme_avoids_sensitive_topics():
 def test_is_sensitive_topic_matches_case_insensitively():
     patient = _make_patient(sensitive_topics_to_avoid=["the war years"])
     assert is_sensitive_topic("The War Years", patient) is True
+
+
+def test_sanitize_biography_for_reminiscence_passes_through_when_safe():
+    patient = _make_patient(biography="Ran the family shop for thirty years.", sensitive_topics_to_avoid=["the war years"])
+    assert sanitize_biography_for_reminiscence(patient) == "Ran the family shop for thirty years."
+
+
+def test_sanitize_biography_for_reminiscence_strips_sensitive_mention():
+    patient = _make_patient(
+        biography="She often talks about losing her husband during the harvest season.",
+        sensitive_topics_to_avoid=["losing her husband"],
+    )
+    assert sanitize_biography_for_reminiscence(patient) == ""
 
 
 def test_build_reminiscence_box_mentions_theme_in_all_three_senses():

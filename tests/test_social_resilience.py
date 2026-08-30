@@ -28,6 +28,10 @@ def _stub_instruction(self, patient, activity_type, step_description, is_hazard_
     return "Please pick up the crayon."
 
 
+def _stub_music_instruction(self, patient, memory, participation_mode):
+    return "Let's listen to a familiar song together."
+
+
 def _raise(*args, **kwargs):
     raise RuntimeError("simulated LLM failure")
 
@@ -53,6 +57,30 @@ def test_session_survives_caregiver_summary_failure(monkeypatch):
     assert result["session_log"].turns[0].feedback == "Nice!"
     assert result["caregiver_summary"] is None
     assert result["urgent_alert"] is None
+
+
+def test_music_therapy_turn_persists_the_session_item(monkeypatch):
+    monkeypatch.setattr(modules.MusicTherapySessionEngine, "generate_instruction", _stub_music_instruction)
+    monkeypatch.setattr(
+        modules.FeedbackEncouragementLayer,
+        "generate",
+        lambda self, prompt, module, response: ParticipationAssessment(participated=True, feedback="Lovely!"),
+    )
+    monkeypatch.setattr(modules.CaregiverReporter, "summarize", lambda self, session_json: "All good.")
+
+    graph = build_session_graph(ChatOllama(model="llama3.3"))
+    config = {"configurable": {"thread_id": "resilience-test-music-session-item"}}
+
+    start_state = dict(_start_state())
+    start_state["schedule_activity"] = "Afternoon music therapy sing-along"
+
+    graph.invoke(start_state, config=config)
+    result = graph.invoke(Command(resume={"response": "Singing along happily", "latency": 2.0}), config=config)
+
+    session_item = result["session_log"].turns[0].session_item
+    assert session_item is not None
+    assert session_item.theme == "folk songs"
+    assert session_item.decade == "1960s"
 
 
 def test_session_survives_feedback_failure(monkeypatch):

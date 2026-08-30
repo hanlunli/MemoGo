@@ -81,6 +81,7 @@ class SessionState(TypedDict, total=False):
     topic: str
     current_prompt: str
     current_is_hazard_step: bool
+    current_session_item: Optional[MusicSessionItem]
     patient_response: Optional[str]
     response_latency_s: float
     complexity: int
@@ -180,10 +181,16 @@ def build_session_graph(llm: BaseChatModel):
                 patient_response=response_text,
                 feedback=assessment.feedback,
                 participation_confirmed=assessment.participated,
-                signal=ActivitySignalLog(incident_flag=incident_flag, agitation_detected=agitation_detected),
+                signal=ActivitySignalLog(
+                    incident_flag=incident_flag, agitation_detected=agitation_detected, engagement_score=engagement_score
+                ),
+                session_item=state.get("current_session_item"),
             )
         )
-        session_log.engagement_score = engagement_score
+        # Roll up the session-level score as the average across every turn's signal instead of
+        # letting the latest turn overwrite it, so one weak turn doesn't erase the rest of the session.
+        turn_scores = [turn.signal.engagement_score for turn in session_log.turns if turn.signal]
+        session_log.engagement_score = round(sum(turn_scores) / len(turn_scores), 2) if turn_scores else engagement_score
         session_log.agitation_detected = agitation_detected
         session_log.hazard_incident = is_safety_stop(incident_flag)
 
