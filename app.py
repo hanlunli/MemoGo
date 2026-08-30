@@ -4,6 +4,11 @@ import time
 import streamlit as st
 from dotenv import load_dotenv
 
+from agents.adl_training import ADLTrainingAgent
+from agents.adl_training import DiseaseStage as ADLDiseaseStage
+from agents.adl_training import MobilityLevel as ADLMobilityLevel
+from agents.adl_training import PatientProfile as ADLPatientProfile
+from agents.adl_training.llm_logging import configure_logging as configure_adl_logging
 from agents.cognitive_brain_training import CognitiveBrainTrainingAgent
 from agents.cognitive_brain_training import DiseaseStage as CognitiveDiseaseStage
 from agents.cognitive_brain_training import PatientProfile as CognitivePatientProfile
@@ -16,10 +21,12 @@ from agents.exercise_motor_coordination_training.llm_logging import configure_lo
 load_dotenv()
 configure_cognitive_logging()
 configure_exercise_logging()
+configure_adl_logging()
 
 AGENT_LABELS = {
     "cognitive": "🧠 Cognitive & Brain Training",
     "exercise": "🏃 Exercise & Motor Coordination Training",
+    "adl": "🧺 Activities of Daily Living (ADL) Training",
 }
 
 COGNITIVE_SCHEDULE_OPTIONS = [
@@ -33,6 +40,11 @@ EXERCISE_SCHEDULE_OPTIONS = [
     "15:30-16:30 Light indoor exercise: Dual-Task Training",
 ]
 
+ADL_SCHEDULE_OPTIONS = [
+    "07:30-08:30 Morning routine, hygiene & breakfast",
+    "10:30-11:30 Household chores",
+]
+
 STAGE_LABELS = {"mild": "Mild", "moderate": "Moderate", "severe": "Severe"}
 
 MOBILITY_LABELS = {
@@ -41,7 +53,22 @@ MOBILITY_LABELS = {
     MobilityLevel.USES_ASSISTIVE_DEVICE: "Uses assistive device",
 }
 
+ADL_MOBILITY_LABELS = {
+    ADLMobilityLevel.INDEPENDENT: "Independent",
+    ADLMobilityLevel.NEEDS_SUPERVISION: "Needs supervision",
+    ADLMobilityLevel.USES_ASSISTIVE_DEVICE: "Uses assistive device",
+}
+
 EXERCISE_TYPE_OPTIONS = ["walking", "tai chi", "baduanjin", "square dancing"]
+
+ADL_TASK_OPTIONS = [
+    "brushing teeth",
+    "getting dressed",
+    "making a warm drink",
+    "folding clothes",
+    "wiping the table",
+    "tidying the kitchen counter",
+]
 
 PROVIDER_LABELS = {
     "ollama": "Ollama (local, llama3.3)",
@@ -84,8 +111,17 @@ def get_exercise_agent(provider: str) -> ExerciseMotorCoordinationTrainingAgent:
     return ExerciseMotorCoordinationTrainingAgent(provider=provider)
 
 
+@st.cache_resource
+def get_adl_agent(provider: str) -> ADLTrainingAgent:
+    return ADLTrainingAgent(provider=provider)
+
+
 def get_agent(agent_kind: str, provider: str):
-    return get_cognitive_agent(provider) if agent_kind == "cognitive" else get_exercise_agent(provider)
+    if agent_kind == "cognitive":
+        return get_cognitive_agent(provider)
+    if agent_kind == "exercise":
+        return get_exercise_agent(provider)
+    return get_adl_agent(provider)
 
 
 def init_state() -> None:
@@ -188,6 +224,27 @@ def render_exercise_fields(name: str, stage_value: str, provider: str) -> None:
             )
 
 
+def render_adl_fields(name: str, stage_value: str, provider: str) -> None:
+    mobility_label = st.selectbox("Mobility level", options=list(ADL_MOBILITY_LABELS.values()), index=0)
+    mobility_level = next(m for m, label in ADL_MOBILITY_LABELS.items() if label == mobility_label)
+    limitations = st.text_input("Physical limitations (comma-separated)", value="")
+    preferred_tasks = st.multiselect("Preferred ADL tasks", options=ADL_TASK_OPTIONS, default=["folding clothes"])
+    schedule_activity = st.selectbox("Current schedule activity", options=ADL_SCHEDULE_OPTIONS, index=0)
+    max_turns = st.slider("Number of turns", min_value=1, max_value=10, value=6)
+
+    if st.button("Start new session", type="primary", use_container_width=True):
+        if _gemini_ready(provider):
+            patient = ADLPatientProfile(
+                patient_id="gui-patient",
+                name=name,
+                stage=ADLDiseaseStage(stage_value),
+                mobility_level=mobility_level,
+                physical_limitations=[l.strip() for l in limitations.split(",") if l.strip()],
+                preferred_adl_tasks=preferred_tasks,
+            )
+            start_new_session("adl", provider, patient, schedule_activity, max_turns)
+
+
 def render_sidebar() -> str:
     with st.sidebar:
         st.header("Training Category")
@@ -205,8 +262,10 @@ def render_sidebar() -> str:
 
         if agent_kind == "cognitive":
             render_cognitive_fields(name, stage_value, provider)
-        else:
+        elif agent_kind == "exercise":
             render_exercise_fields(name, stage_value, provider)
+        else:
+            render_adl_fields(name, stage_value, provider)
 
     return agent_kind
 
@@ -222,9 +281,9 @@ def render_active_turn(prompt: str) -> None:
 
 
 def render_completed_session(step) -> None:
-    safety_alert = getattr(step, "safety_alert", None)
-    if safety_alert:
-        st.error(f"⚠️ Safety alert: {safety_alert}")
+    alert = getattr(step, "safety_alert", None) or getattr(step, "hazard_alert", None)
+    if alert:
+        st.error(f"⚠️ Safety alert: {alert}")
     else:
         st.success("Session complete!")
 
@@ -235,7 +294,7 @@ def render_completed_session(step) -> None:
             st.write(f"Response: {turn.patient_response}")
             st.write(f"Feedback: {turn.feedback}")
 
-    if not safety_alert and step.caregiver_summary:
+    if not alert and step.caregiver_summary:
         st.subheader("Caregiver summary")
         st.write(step.caregiver_summary)
 
