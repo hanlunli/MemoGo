@@ -28,6 +28,11 @@ SAFETY_KEYWORDS: dict[IncidentFlag, tuple[str, ...]] = {
 AEROBIC_EXERCISE_TYPES = ("walking", "tai chi", "baduanjin", "square dancing")
 MOTOR_TASKS = ("walking slowly", "marching in place", "bouncing a ball")
 COGNITIVE_OVERLAY_DOMAINS = ("counting", "attention", "memory")
+COGNITIVE_OVERLAY_EXERCISE_TYPES = {
+    "counting": "arithmetic",
+    "attention": "picture recognition",
+    "memory": "word association",
+}
 
 STAGE_INTENSITY_CEILING = {
     DiseaseStage.MILD: 5,
@@ -76,7 +81,7 @@ class DualTaskTrainingCoordinator:
         if include_cognitive_task:
             domain = random.choice(COGNITIVE_OVERLAY_DOMAINS)
             exercise = self._cognitive_exercise_generator.generate(
-                domain=domain, difficulty=1, exercise_type="word association"
+                domain=domain, difficulty=1, exercise_type=COGNITIVE_OVERLAY_EXERCISE_TYPES[domain]
             )
             cognitive_task = exercise.content
 

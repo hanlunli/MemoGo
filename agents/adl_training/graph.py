@@ -24,10 +24,13 @@ from .models import (
     TaskSignalLog,
 )
 from .modules import (
+    ENVIRONMENTAL_CUE_STEP,
     ORIENTATION_STEP,
     STAGE_BASELINE_ASSISTANCE,
     STAGE_FLOOR_ASSISTANCE,
+    TASK_ROOM_LABELS,
     CaregiverReporter,
+    EnvironmentalCueEngine,
     FeedbackEncouragementLayer,
     MorningOrientationOpener,
     StepInstructionEngine,
@@ -71,6 +74,7 @@ class SessionState(TypedDict, total=False):
     current_prompt: str
     current_is_hazard_step: bool
     is_orientation_turn: bool
+    is_environmental_cue_turn: bool
     patient_response: Optional[str]
     response_latency_s: float
     assistance_level: AssistanceLevel
@@ -88,6 +92,7 @@ class SessionState(TypedDict, total=False):
 def build_session_graph(llm: BaseChatModel):
     step_instruction_engine = StepInstructionEngine(llm)
     orientation_opener = MorningOrientationOpener(llm)
+    environmental_cue_engine = EnvironmentalCueEngine(llm)
     feedback_layer = FeedbackEncouragementLayer(llm)
     caregiver_reporter = CaregiverReporter(llm)
 
@@ -120,6 +125,17 @@ def build_session_graph(llm: BaseChatModel):
                 "current_prompt": prompt,
                 "current_is_hazard_step": False,
                 "is_orientation_turn": True,
+                "is_environmental_cue_turn": False,
+            }
+
+        if step_description == ENVIRONMENTAL_CUE_STEP:
+            room_label = TASK_ROOM_LABELS[state["task_name"]]
+            prompt = environmental_cue_engine.generate(patient, room_label)
+            return {
+                "current_prompt": prompt,
+                "current_is_hazard_step": False,
+                "is_orientation_turn": False,
+                "is_environmental_cue_turn": True,
             }
 
         assistance_level = state.get("assistance_level") or STAGE_BASELINE_ASSISTANCE[patient.stage]
@@ -131,6 +147,7 @@ def build_session_graph(llm: BaseChatModel):
             "current_prompt": prompt,
             "current_is_hazard_step": is_hazard_step,
             "is_orientation_turn": False,
+            "is_environmental_cue_turn": False,
             "assistance_level": assistance_level,
         }
 
@@ -146,6 +163,7 @@ def build_session_graph(llm: BaseChatModel):
 
         patient = state["patient"]
         is_orientation_turn = state.get("is_orientation_turn", False)
+        is_environmental_cue_turn = state.get("is_environmental_cue_turn", False)
         assistance_level = state.get("assistance_level", AssistanceLevel.INDEPENDENT)
 
         if is_orientation_turn:
@@ -153,6 +171,10 @@ def build_session_graph(llm: BaseChatModel):
             step_completed: Optional[bool] = True
             # Orientation has no assistance tier of its own; leave state["assistance_level"]
             # unset so the first real step still starts from the patient's stage baseline.
+            new_assistance_level = state.get("assistance_level")
+        elif is_environmental_cue_turn:
+            feedback = "Great, you found it!"
+            step_completed = True
             new_assistance_level = state.get("assistance_level")
         else:
             try:
@@ -192,10 +214,10 @@ def build_session_graph(llm: BaseChatModel):
         session_log.hazard_incident = is_safety_stop(incident_flag)
 
         step_index = state.get("step_index", 0)
-        should_advance = is_orientation_turn or step_completed is True
+        should_advance = is_orientation_turn or is_environmental_cue_turn or step_completed is True
         if should_advance and not is_safety_stop(incident_flag):
             step_index += 1
-            if not is_orientation_turn:
+            if not is_orientation_turn and not is_environmental_cue_turn:
                 session_log.steps_completed += 1
                 level_key = assistance_level.value
                 session_log.assistance_level_counts[level_key] = (

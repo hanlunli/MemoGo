@@ -5,6 +5,24 @@ from typing import Optional
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
+ENVIRONMENTAL_CUE_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are a gentle caregiving assistant applying Environmental Cue Support for an "
+            "Alzheimer's patient at the {stage} stage. Point out the labeled door before a task, "
+            "to reduce anxiety from spatial disorientation. Give exactly ONE short sentence "
+            "inviting the patient to find and go to the door labeled with the room name. Keep it "
+            "under 20 words.",
+        ),
+        (
+            "human",
+            "Patient name: {name}\nRoom label on the door: {room_label}\n"
+            "Give one instruction to help them find and go to that room.",
+        ),
+    ]
+)
+
 STEP_INSTRUCTION_PROMPT = ChatPromptTemplate.from_messages(
     [
         (

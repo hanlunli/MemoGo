@@ -12,6 +12,7 @@ from agents.cognitive_brain_training.modules import RealityOrientationEngine
 from .models import AssistanceLevel, DiseaseStage, IncidentFlag, ModuleId, PatientProfile
 from .prompts import (
     CAREGIVER_SUMMARY_PROMPT,
+    ENVIRONMENTAL_CUE_PROMPT,
     HAZARD_ALERT_PROMPT,
     STEP_ASSESSMENT_PROMPT,
     STEP_INSTRUCTION_PROMPT,
@@ -38,6 +39,13 @@ HAZARD_KEYWORDS: dict[IncidentFlag, tuple[str, ...]] = {
 }
 
 ORIENTATION_STEP = "__orientation_check__"
+ENVIRONMENTAL_CUE_STEP = "__environmental_cue__"
+
+TASK_ROOM_LABELS: dict[str, str] = {
+    "brushing teeth": "Bathroom",
+    "making a warm drink": "Kitchen",
+    "getting dressed": "Bedroom",
+}
 
 PERSONAL_CARE_TASKS: dict[str, list[tuple[str, bool]]] = {
     "brushing teeth": [
@@ -159,6 +167,21 @@ class MorningOrientationOpener:
         return self._engine.generate_prompt(cognitive_patient)
 
 
+class EnvironmentalCueEngine:
+    """Reinforces the labeled door for the room a task takes place in (e.g. 'Bathroom',
+    'Bedroom'), per the spec's Environmental Cue Support method, to reduce anxiety from
+    spatial disorientation before the task begins."""
+
+    def __init__(self, llm: BaseChatModel):
+        self._chain = ENVIRONMENTAL_CUE_PROMPT | llm
+
+    def generate(self, patient: PatientProfile, room_label: str) -> str:
+        result = self._chain.invoke(
+            {"stage": patient.stage.value, "name": patient.name, "room_label": room_label}
+        )
+        return result.content
+
+
 class FeedbackEncouragementLayer:
     def __init__(self, llm: BaseChatModel):
         self._chain = STEP_ASSESSMENT_PROMPT | llm.with_structured_output(StepAssessment)
@@ -199,6 +222,8 @@ def select_task(module: ModuleId, patient: PatientProfile) -> str:
 
 def build_step_sequence(module: ModuleId, task_name: str, schedule_activity: str) -> list[tuple[str, bool]]:
     steps = list(TASK_LIBRARY[module][task_name])
+    if task_name in TASK_ROOM_LABELS:
+        steps = [(ENVIRONMENTAL_CUE_STEP, False)] + steps
     if module == ModuleId.PERSONAL_CARE and "morning" in schedule_activity.lower():
         steps = [(ORIENTATION_STEP, False)] + steps
     return steps

@@ -37,7 +37,13 @@ from .prompts import ResponseAssessment
 logger = logging.getLogger("cognitive_brain_training.graph")
 
 DEFAULT_MEMORY = MemoryItem(media_type="story", theme="family", decade="1980s")
-EXERCISE_TYPES = ("arithmetic", "word association", "picture recognition")
+EXERCISE_TYPES = (
+    "arithmetic",
+    "word association",
+    "picture recognition",
+    "mahjong-style tile matching",
+    "simple logic puzzle",
+)
 
 _CHECKPOINT_SERDE = JsonPlusSerializer(
     allowed_msgpack_modules=[
