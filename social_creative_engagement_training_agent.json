@@ -1,0 +1,209 @@
+{
+  "agentId": "social-creative-engagement-training-agent",
+  "agentName": "Social & Creative Engagement Training AI Agent",
+  "category": "Social & Creative Engagement",
+  "purpose": "Runs the Music Therapy and Crafts & Horticulture activities from the training plan, plus the social-interaction portion of the reminiscence & social engagement block, adapting content, complexity, and pacing to the patient's disease stage, fine-motor ability, and real-time mood/BPSD signals.",
+  "coreModules": [
+    {
+      "id": "music-therapy-session-engine",
+      "name": "Music Therapy Session Engine",
+      "description": "Plays familiar songs from the patient's youth and guides rhythmic clapping, singing-along, or listening sessions to lift mood and reduce BPSD.",
+      "keyBehaviors": [
+        "Select songs from the patient's decade/theme-tagged memory bank (shared with the Cognitive & Brain Training Agent) rather than maintaining a separate song library",
+        "Offer clap-along, sing-along, or listen-only participation modes based on stage and current mood",
+        "Track the participation mode taken and duration sustained per song",
+        "Prioritize familiar, previously well-received songs over novel ones when agitation or low mood is detected"
+      ]
+    },
+    {
+      "id": "crafts-horticulture-activity-engine",
+      "name": "Crafts & Horticulture Activity Engine",
+      "description": "Guides fine-motor crafts (bead stringing, origami, drawing) and simple horticulture tasks (watering plants) using prompt-demonstrate-assist step delivery.",
+      "keyBehaviors": [
+        "Break the chosen craft/horticulture task into atomic steps and never present more than one step at a time",
+        "Select the activity type from the patient's preferred list, filtered by current fine-motor ability and disease stage",
+        "Reuse a stored step sequence for a familiar activity rather than re-deriving it each session",
+        "Frame completion around the sense of accomplishment (e.g. displaying the finished craft) rather than correctness"
+      ]
+    },
+    {
+      "id": "social-interaction-facilitator",
+      "name": "Social Interaction Facilitator",
+      "description": "Structures short, low-pressure conversational exchanges with neighbors, friends, or family during the reminiscence & social engagement block.",
+      "keyBehaviors": [
+        "Prompt the caregiver to invite a listed social contact and suggest a conversation starter drawn from the patient's biography/topics",
+        "Offer closed-choice or short open-ended prompts to reduce conversational pressure, and enforce one topic/question at a time",
+        "Track interaction occurrence, duration, and participation level (initiated, responsive, withdrawn) per contact",
+        "Flag repeated withdrawal or declined invitations as a social-engagement trend, not a single-session failure"
+      ]
+    },
+    {
+      "id": "fine-motor-material-safety-monitor",
+      "name": "Fine Motor & Material Safety Monitor",
+      "description": "Flags craft/horticulture materials that pose a cutting, burn, or choking hazard and watches for reported difficulty or distress.",
+      "keyBehaviors": [
+        "Mark hazard-tagged materials (scissors, hot glue, garden shears, small beads) as requiring caregiver presence before use",
+        "Treat small/loose materials as a choking-risk hazard by default at moderate/severe stage and substitute larger-format alternatives",
+        "Detect reported cuts, burns, or dropped/mishandled tools and stop the activity step immediately, not just step down",
+        "Log every hazard-flagged step regardless of whether an incident occurred"
+      ]
+    },
+    {
+      "id": "adaptive-complexity-pacing-controller",
+      "name": "Adaptive Complexity & Pacing Controller",
+      "description": "Adjusts craft complexity, song tempo/duration, and session length based on disease stage and real-time signals.",
+      "keyBehaviors": [
+        "Set per-stage complexity ceilings for craft steps (e.g. fewer origami folds, larger beads) and song tempo/duration for music sessions",
+        "Step down complexity or shorten the session after fatigue, frustration, or repeated fine-motor difficulty — never escalate on a struggled attempt",
+        "De-escalate back toward more complex activities only gradually, after repeated unprompted success",
+        "Switch a music session to listen-only when clap/sing participation lapses, rather than ending the session outright"
+      ]
+    },
+    {
+      "id": "mood-bpsd-engagement-monitor",
+      "name": "Mood & BPSD Engagement Monitor",
+      "description": "Captures mood before and after each session and detects disengagement, agitation, or other BPSD signals to trigger a pause or graceful exit.",
+      "keyBehaviors": [
+        "Record a brief caregiver-observed mood rating immediately before and after each session",
+        "Detect long response latency, refusal language, or agitation cues as disengagement/BPSD signals",
+        "Trigger session pause, activity substitution, or graceful exit on sustained disengagement or rising agitation",
+        "Enforce one-instruction-at-a-time delivery throughout"
+      ]
+    },
+    {
+      "id": "feedback-encouragement-layer",
+      "name": "Feedback & Encouragement Layer",
+      "description": "Generates positive, non-corrective reinforcement regardless of craft outcome or musical accuracy.",
+      "keyBehaviors": [
+        "Affirm participation and effort in every craft, music, or social exchange, regardless of the result",
+        "Never phrase feedback as a correction on a missed lyric, dropped bead, or fumbled fold",
+        "Keep language simple, warm, and specific to the moment just completed"
+      ]
+    },
+    {
+      "id": "progress-engagement-tracking",
+      "name": "Progress & Engagement Trend Tracking",
+      "description": "Logs per-session mood, participation, and fine-motor performance longitudinally as an informal social/creative engagement trend.",
+      "keyBehaviors": [
+        "Log the mood-before/after delta, participation mode, session completion, and social-interaction occurrence",
+        "Compute longitudinal trend summaries for mood improvement, fine-motor steadiness, and social-withdrawal frequency",
+        "Trends are informal signals only, not a clinical or BPSD diagnostic"
+      ]
+    },
+    {
+      "id": "caregiver-reporting",
+      "name": "Caregiver/Clinician Reporting",
+      "description": "Summarizes session activity and distinguishes routine digests from urgent hazard or BPSD alerts.",
+      "keyBehaviors": [
+        "Generate a daily/weekly digest of sessions completed, mood trend, and social-interaction frequency",
+        "Escalate a material-safety incident or a failed-to-de-escalate agitation episode as an immediate alert, not batched into the digest",
+        "Highlight notable trend changes (e.g. rising social withdrawal or a declining mood-improvement rate)"
+      ]
+    },
+    {
+      "id": "personalization-profile",
+      "name": "Personalization Profile",
+      "description": "Stores patient-specific context used to tailor music, craft, and social-interaction selection; extends the profile shared across agents.",
+      "keyBehaviors": [
+        "Store preferred music genres/songs and craft/horticulture activity preferences",
+        "Store the social contact list (name, relationship, preferred contact method, last-interaction date)",
+        "Store the fine-motor baseline and known material sensitivities (e.g. avoid latex, tremor severity)",
+        "Store current disease-stage setting (shared with Cognitive/Exercise/ADL/Safety agents)"
+      ]
+    },
+    {
+      "id": "scheduler-integration",
+      "name": "Scheduler Integration",
+      "description": "Ties agent activation to the patient's daily schedule.",
+      "keyBehaviors": [
+        "Read assigned time blocks from the daily schedule (e.g. reminiscence & social engagement, fine motor skills & art therapy)",
+        "Auto-select the Music Therapy / Crafts & Horticulture / Social Interaction module per time block and disease stage",
+        "Report completion status back to the schedule"
+      ]
+    }
+  ],
+  "sessionLifecycle": [
+    {
+      "step": 1,
+      "name": "Schedule check",
+      "description": "Check the daily schedule and select the module (Music Therapy / Crafts & Horticulture / Social Interaction) based on time block and disease stage."
+    },
+    {
+      "step": 2,
+      "name": "Content preparation",
+      "description": "Load the personalization profile and prepare content: pull songs from the shared memory bank, select a craft/horticulture activity, or line up a social contact invitation and conversation starter."
+    },
+    {
+      "step": 3,
+      "name": "Instruction/interaction delivery",
+      "description": "Deliver one instruction, prompt, or conversational turn at a time and capture the patient/caregiver-reported response."
+    },
+    {
+      "step": 4,
+      "name": "Adaptive adjustment",
+      "description": "Adaptive complexity & pacing controller adjusts craft complexity, song tempo/duration, or conversational pacing based on the response and signals."
+    },
+    {
+      "step": 5,
+      "name": "Safety/mood interrupt",
+      "description": "Fine motor & material safety monitor and mood & BPSD engagement monitor can interrupt at any point, pausing or stopping and logging the reason; material-safety incidents trigger an immediate caregiver alert."
+    },
+    {
+      "step": 6,
+      "name": "Session close",
+      "description": "Log the session, update the engagement trend, and notify the caregiver (routine digest, or immediate alert if a hazard/agitation incident occurred)."
+    }
+  ],
+  "dataModel": [
+    {
+      "entity": "PatientProfile",
+      "fields": ["stage", "musicPreferences", "craftHorticulturePreferences", "socialContacts", "fineMotorBaseline", "materialSensitivities"]
+    },
+    {
+      "entity": "MusicSessionItem",
+      "fields": ["songRef", "decade", "participationMode", "tempo"]
+    },
+    {
+      "entity": "CraftActivityItem",
+      "fields": ["activityType", "material", "fineMotorDemand", "difficulty", "hazardFlag"]
+    },
+    {
+      "entity": "SocialContact",
+      "fields": ["name", "relationship", "contactMethod", "lastInteractionDate"]
+    },
+    {
+      "entity": "SessionLog",
+      "fields": ["module", "timestamp", "activityType", "participationLevel", "moodBefore", "moodAfter", "hazardIncident", "agitationFlag"]
+    },
+    {
+      "entity": "ProgressTrend",
+      "fields": ["domain", "rollingMoodImprovement", "rollingFineMotorSteadiness", "socialWithdrawalFrequency", "timeframe"]
+    }
+  ],
+  "integration": {
+    "sharedContext": [
+      "PatientProfile and stage setting shared with Cognitive/Exercise/ADL/Safety agents for consistent difficulty and intensity calibration",
+      "Fine-motor baseline shared with the ADL agent for consistent hand-task assistance-tier calibration"
+    ],
+    "crossAgentCalls": [
+      {
+        "caller": "Social & Creative Engagement Training Agent",
+        "capability": "reminiscence-session-manager",
+        "providerAgent": "Cognitive & Brain Training AI Agent",
+        "usage": "The reminiscence & social engagement block invokes the Cognitive Agent's reminiscence-session-manager for the photo/story-sharing portion, then hands off to the Social Interaction Facilitator for the neighbor/family conversation portion; the Music Therapy Session Engine also draws songs from that agent's shared decade/theme-tagged memory bank instead of maintaining a separate song library"
+      },
+      {
+        "caller": "Home Safety, Routine & Emotional Care Agent",
+        "capability": "music-therapy-session-engine",
+        "usage": "The Emotional Outburst De-Escalation Coach can invoke this agent's music-therapy-session-engine directly for a familiar-song redirection option, alongside the photo/song it already pulls via the Cognitive Agent"
+      }
+    ]
+  },
+  "successMetrics": [
+    "Session completion rate by activity type (music, crafts/horticulture, social interaction)",
+    "Mood-before/after improvement rate and BPSD/agitation episode frequency during sessions (goal: decreasing)",
+    "Social interaction frequency and withdrawal trend across listed contacts",
+    "Frequency of material-safety incidents (goal: zero) and fine-motor steadiness trend",
+    "Caregiver-reported mood and quality-of-life improvement"
+  ]
+}

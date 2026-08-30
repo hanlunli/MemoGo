@@ -1,0 +1,189 @@
+{
+  "agentId": "adl-training-agent",
+  "agentName": "Activities of Daily Living (ADL) Training AI Agent",
+  "category": "Activities of Daily Living (ADL) Training",
+  "purpose": "Runs the Functional Life Reshaping and Environmental Cue Support activities from the training plan, breaking routine self-care and household tasks into prompt-demonstrate-assist steps and calibrating how much support each step needs to the patient's disease stage, mobility, and real-time frustration/safety signals — preserving independence for as long as possible.",
+  "coreModules": [
+    {
+      "id": "functional-life-reshaping-engine",
+      "name": "Functional Life Reshaping Engine",
+      "description": "Decomposes a daily-living task (dressing, brushing teeth, washing up, tidying a desk, simple meal prep) into an ordered sequence of small, concrete steps.",
+      "keyBehaviors": [
+        "Break the chosen task into atomic steps (e.g. \"pick up the toothbrush\", \"put toothpaste on it\", \"brush your teeth\")",
+        "Sequence steps in the task's natural order and never present more than one step at a time",
+        "Reuse a stored step sequence for a familiar task, adapting wording rather than re-deriving it each session",
+        "Skip or merge steps the patient already performs independently, per the personalization profile"
+      ]
+    },
+    {
+      "id": "environmental-cue-support-manager",
+      "name": "Environmental Cue Support Manager",
+      "description": "Tracks and prompts for physical environmental cues (door labels, icon signage) that reduce spatial disorientation and support task steps.",
+      "keyBehaviors": [
+        "Maintain a per-location cue map (e.g. \"Bathroom\" label on bathroom door) with placement status",
+        "Suggest new cues when a task step repeatedly stalls on wayfinding or item-finding",
+        "Remind the caregiver to (re)place or refresh a cue that is missing or reported as ineffective",
+        "Reference existing cues in step instructions (e.g. \"Walk to the door marked Bathroom\") instead of duplicating spatial guidance"
+      ]
+    },
+    {
+      "id": "adaptive-assistance-controller",
+      "name": "Adaptive Assistance Controller",
+      "description": "Chooses the assistance tier — verbal prompt, demonstration, or hands-on assist — for each step based on disease stage, mobility, and how the previous step went.",
+      "keyBehaviors": [
+        "Start each step at the lowest assistance tier the patient's stage and recent history warrant",
+        "Escalate one tier (prompt to demonstrate, demonstrate to physical assist) after a stalled or unsuccessful attempt on that step",
+        "De-escalate back toward independence only gradually, after repeated unprompted success — never drop support abruptly",
+        "Never escalate to correction or repeated pressure on the same tier; escalate the assistance tier instead"
+      ]
+    },
+    {
+      "id": "safety-hazard-monitor",
+      "name": "Safety & Hazard Monitor",
+      "description": "Flags steps that involve heat, sharp objects, stairs, or other hazards and watches for reported injury or distress during them.",
+      "keyBehaviors": [
+        "Mark hazard-tagged steps (stove, hot water, knives, stairs) as requiring caregiver presence before they are delivered",
+        "Detect reported burns, cuts, falls, or distress language and stop the task immediately, not just step down",
+        "Never let a hazard-tagged step run unsupervised even if the patient is otherwise independent on that task",
+        "Log every hazard-flagged step regardless of whether an incident occurred"
+      ]
+    },
+    {
+      "id": "engagement-frustration-monitor",
+      "name": "Engagement & Frustration Monitor",
+      "description": "Detects disengagement, frustration, or refusal during a task and triggers a pause, simplification, or graceful exit.",
+      "keyBehaviors": [
+        "Detect long response latency, refusal language, or agitation cues as frustration signals",
+        "Pause and offer a simplified version of the current step before abandoning the task",
+        "Trigger a graceful session exit on sustained resistance rather than pushing through",
+        "Enforce one-instruction-at-a-time delivery throughout"
+      ]
+    },
+    {
+      "id": "feedback-encouragement-layer",
+      "name": "Feedback & Encouragement Layer",
+      "description": "Generates positive, non-corrective reinforcement regardless of how much assistance a step needed.",
+      "keyBehaviors": [
+        "Affirm effort and participation at every assistance tier, including fully assisted steps",
+        "Never phrase feedback as a correction when a step was missed, fumbled, or needed help",
+        "Keep language simple, warm, and specific to the step just completed"
+      ]
+    },
+    {
+      "id": "independence-progress-tracking",
+      "name": "Independence & Progress Tracking",
+      "description": "Logs the assistance tier used per step, longitudinally, as an informal functional-independence trend per task type.",
+      "keyBehaviors": [
+        "Log the assistance-tier distribution (independent / verbal cue / demonstration / physical assist) for each completed task",
+        "Compute a rolling independence score and completion rate per task type (dressing, hygiene, meal prep, tidying)",
+        "Trends are informal signals only, not a clinical or functional-decline diagnostic"
+      ]
+    },
+    {
+      "id": "caregiver-reporting",
+      "name": "Caregiver/Clinician Reporting",
+      "description": "Summarizes task activity and distinguishes routine digests from urgent hazard alerts.",
+      "keyBehaviors": [
+        "Generate a daily/weekly digest of tasks attempted, completion rate, and assistance-tier trend",
+        "Escalate a hazard incident as an immediate alert, not batched into the digest",
+        "Highlight notable independence trend changes (e.g. rising physical-assist share on a previously independent task)"
+      ]
+    },
+    {
+      "id": "personalization-profile",
+      "name": "Personalization Profile",
+      "description": "Stores patient-specific context used to tailor task selection, step wording, and assistance calibration; extends the profile shared across agents.",
+      "keyBehaviors": [
+        "Store the environmental cue map and per-task independence baseline",
+        "Store task-specific preferences (e.g. preferred dressing order, favorite mug) to reduce decision friction",
+        "Store mobility level and physical limitations, shared with the Exercise & Motor Coordination agent",
+        "Store current disease-stage setting (shared with Cognitive/Exercise/Social agents)"
+      ]
+    },
+    {
+      "id": "scheduler-integration",
+      "name": "Scheduler Integration",
+      "description": "Ties agent activation to the patient's daily schedule.",
+      "keyBehaviors": [
+        "Read assigned time blocks from the daily schedule (e.g. morning hygiene & dressing, household chores)",
+        "Auto-select the ADL task per time block and disease stage",
+        "Report completion status back to the schedule"
+      ]
+    }
+  ],
+  "sessionLifecycle": [
+    {
+      "step": 1,
+      "name": "Schedule check",
+      "description": "Check daily schedule and select the ADL task (e.g. morning hygiene & dressing, household chores) based on time block and disease stage."
+    },
+    {
+      "step": 2,
+      "name": "Task preparation",
+      "description": "Load the personalization profile (independence baseline, cue map, limitations) and decompose the task into its step sequence; for the morning routine block, open with a brief orientation check sourced from the Cognitive & Brain Training Agent."
+    },
+    {
+      "step": 3,
+      "name": "Step delivery (prompt-demonstrate-assist)",
+      "description": "Deliver the current step at the assistance tier chosen for it — prompt, demonstrate, or hands-on assist — one step at a time, and capture the patient/caregiver-reported response."
+    },
+    {
+      "step": 4,
+      "name": "Adaptive assistance adjustment",
+      "description": "Adaptive assistance controller raises or lowers the assistance tier for the next step based on the response and any hazard/frustration signals."
+    },
+    {
+      "step": 5,
+      "name": "Hazard/frustration interrupt",
+      "description": "Safety & hazard monitor and engagement & frustration monitor can interrupt at any point, pausing or stopping and logging the reason; hazard incidents trigger an immediate caregiver alert."
+    },
+    {
+      "step": 6,
+      "name": "Session close",
+      "description": "Log the session, update the independence trend, and notify the caregiver (routine digest, or immediate alert if a hazard incident occurred)."
+    }
+  ],
+  "dataModel": [
+    {
+      "entity": "PatientProfile",
+      "fields": ["stage", "mobilityLevel", "physicalLimitations", "adlPreferences", "environmentalCueMap"]
+    },
+    {
+      "entity": "ADLTaskStep",
+      "fields": ["taskName", "stepIndex", "stepDescription", "assistanceLevel", "hazardFlag"]
+    },
+    {
+      "entity": "EnvironmentalCue",
+      "fields": ["location", "labelText", "iconType", "placementStatus"]
+    },
+    {
+      "entity": "SessionLog",
+      "fields": ["module", "timestamp", "taskName", "stepsCompleted", "assistanceLevelDistribution", "hazardIncident", "frustrationFlag"]
+    },
+    {
+      "entity": "ProgressTrend",
+      "fields": ["taskType", "rollingIndependenceScore", "rollingCompletionRate", "timeframe"]
+    }
+  ],
+  "integration": {
+    "sharedContext": [
+      "PatientProfile and stage setting shared with Cognitive/Exercise/Social agents for consistent difficulty and intensity calibration",
+      "MobilityLevel and physicalLimitations shared with the Exercise & Motor Coordination agent for consistent task calibration"
+    ],
+    "crossAgentCalls": [
+      {
+        "caller": "Activities of Daily Living (ADL) Training Agent",
+        "capability": "reality-orientation-engine",
+        "providerAgent": "Cognitive & Brain Training AI Agent",
+        "usage": "The morning routine block opens with a brief date/weather/location orientation check, sourced from the Cognitive & Brain Training Agent, before the dressing/hygiene step sequence begins"
+      }
+    ]
+  },
+  "successMetrics": [
+    "ADL task completion rate by task type (dressing, hygiene, meal prep, tidying)",
+    "Independence trend: share of steps completed with verbal cue only vs. demonstration vs. physical assist",
+    "Frequency of hazard-flagged steps requiring caregiver supervision or intervention",
+    "Frequency of frustration/refusal-triggered pauses (expected to decrease with well-calibrated cueing)",
+    "Caregiver-reported reduction in daily-care burden and confidence in the patient's independent functioning"
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "caregivingMethods": {
+    "overview": "For individuals with Alzheimer's disease (AD) and their caregivers, daily management focuses on maintaining routine, ensuring personal safety, reducing cognitive load, and preserving the patient's dignity.",
+    "categories": [
+      {
+        "name": "Home Safety & Protection",
+        "methods": [
+          {
+            "name": "Wandering Prevention",
+            "description": "Fit ID bracelets, necklaces, or clothing labels printed with the patient's name and family emergency contacts; use GPS-enabled smartwatches, location-tracking insoles, or portable tracking cards; and install concealed locks, door alarms, or alert bells, with curtains matching the wall color placed over doors to reduce the urge to wander outside alone."
+          },
+          {
+            "name": "De-risking the Home Environment",
+            "description": "Install automatic gas shut-off valves and smoke detectors, cover unused outlets with insulating safety caps, and store high-power appliances out of reach; install grab bars and non-slip mats, keep floors dry and clutter-free, and keep nightlights on in hallways and bathrooms; lock away all medications for caregiver-controlled dosing and store chemical cleaners and sharp objects out of reach."
+          }
+        ]
+      },
+      {
+        "name": "Daily Life & Routine Management",
+        "methods": [
+          {
+            "name": "Establishing a Highly Structured Routine",
+            "description": "Keep fixed times for meals, sleep, hygiene, and walks to minimize drastic changes in environment or schedule, and use large-print calendars, digital clocks, and simple icon-based schedules (visual prompt boards) to help the patient confirm the time and upcoming activities."
+          },
+          {
+            "name": "Simplifying Instructions & Choices",
+            "description": "Lay out clothes in dressing order and limit closet options to a few easy-to-wear seasonal outfits (e.g. zippers or Velcro); use short, concrete sentences delivering one idea at a time, and replace open-ended questions with multiple-choice options (e.g. \"Would you like water or tea?\" instead of \"What would you like to drink?\")."
+          },
+          {
+            "name": "Dietary & Medication Reminders",
+            "description": "Serve easy-to-chew and easy-to-swallow foods at moderate temperatures and monitor meal times to prevent double-eating or skipped meals caused by memory impairment; use daily pill organizers with alarm reminders and ensure medications are taken strictly under caregiver supervision."
+          }
+        ]
+      },
+      {
+        "name": "Emotional Support & Comfort",
+        "methods": [
+          {
+            "name": "Managing Sundowning",
+            "description": "For patients who become anxious or restless in the late afternoon or evening, close curtains early, turn on bright indoor lights to eliminate shadows, and arrange calming, familiar activities such as listening to soft music or browsing photo albums."
+          },
+          {
+            "name": "Empathy & Inclusivity",
+            "description": "When the patient is confused or repeats questions, avoid direct correction or argument; use listening, acceptance, and redirection strategies instead."
+          },
+          {
+            "name": "Encouraging Independence",
+            "description": "Where safe, encourage the patient to perform manageable tasks such as folding clothes or watering plants, to maintain self-esteem and functional skills."
+          }
+        ]
+      },
+      {
+        "name": "Coping Strategies for Sundowning and Emotional Outbursts",
+        "overview": "Sundowning in Alzheimer's disease typically presents as agitation, anxiety, hallucinations, worsened disorientation, and sudden irritability during dusk or evening hours.",
+        "methods": [
+          {
+            "name": "Environment & Lighting Adjustments",
+            "description": "Around 4:00 PM, draw the curtains and turn on bright, warm indoor lights to prevent perceptual confusion and fear of shadows caused by fading daylight; turn off TVs, radios, and other noise sources after dusk and minimize household traffic; avoid scheduling room changes, baths, or guest visits in the evening, as these can trigger stress responses."
+          },
+          {
+            "name": "Immediate De-Escalation for Emotional Outbursts",
+            "description": "Never try to convince, correct, or blame the patient using logic, as arguing only heightens frustration and hostility; validate their emotional state and gently redirect focus using familiar vintage items, soft classic/old songs, light snacks, or simple hands-on micro-tasks (e.g. folding towels or clothes); lower your voice, slow your speech, and use short, comforting phrases (e.g. \"It's okay, I'm right here\"); maintain gentle eye contact and offer light touch or hand-holding only after confirming the patient does not resist physical contact."
+          },
+          {
+            "name": "Daily Prevention & Care Habits",
+            "description": "Schedule 30-60 minutes of morning outdoor sunlight to regulate circadian rhythms and limit daytime naps with light activities such as watering plants or drawing; limit caffeine and high-sugar intake in the afternoon and evening, keep dinners light, and offer a small cup of warm milk or a gentle hot drink before bedtime; maintain a \"Sundowning Journal\" logging the timing of outbursts and preceding events, food, or environmental factors to identify and prevent triggers."
+          }
+        ]
+      }
+    ],
+    "principles": [
+      "Daily management for Alzheimer's disease centers on maintaining routine, ensuring personal safety, reducing cognitive load, and preserving the patient's dignity.",
+      "Prevent proactively rather than react: adjust lighting, stimuli, and the daily rhythm ahead of the dusk/sundowning window instead of only responding once agitation appears.",
+      "Never argue, correct, or use logic to convince the patient during confusion or an emotional outburst — validate and redirect instead."
+    ],
+    "executionGuidelines": [
+      {
+        "name": "Non-Confrontational Approach",
+        "description": "Do not try to convince, correct, or blame the patient using logic; arguing only heightens frustration and hostility."
+      },
+      {
+        "name": "Redirection Technique",
+        "description": "Validate the patient's emotional state and gently redirect focus using familiar vintage items, soft classic songs, light snacks, or simple hands-on micro-tasks."
+      },
+      {
+        "name": "Short, Soft Language & Calming Body Language",
+        "description": "Lower your voice, slow your speech, use short comforting phrases, and offer gentle eye contact or light touch/hand-holding only if the patient does not resist physical contact."
+      }
+    ]
+  },
+  "sundowningJournalTemplate": {
+    "purpose": "Log the timing, antecedents, and environmental factors around sundowning/emotional-outburst episodes to identify and prevent triggers.",
+    "fields": ["date", "timeOfOnset", "precedingEvent", "foodOrDrinkIntake", "environmentalFactor", "symptomsObserved", "interventionUsed", "outcome"]
+  }
+}

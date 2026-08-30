@@ -1,0 +1,186 @@
+{
+  "agentId": "exercise-motor-coordination-training-agent",
+  "agentName": "Exercise & Motor Coordination Training AI Agent",
+  "category": "Exercise & Motor Coordination Training",
+  "purpose": "Runs the Aerobic Exercise and Dual-Task Training activities from the training plan, pacing physical activity and blended motor/cognitive tasks to the patient's disease stage, mobility level, and real-time exertion/safety signals.",
+  "coreModules": [
+    {
+      "id": "aerobic-exercise-session-engine",
+      "name": "Aerobic Exercise Session Engine",
+      "description": "Guides low-to-moderate intensity aerobic sessions (walking, Tai Chi, Baduanjin, square dancing) with paced, step-by-step cueing.",
+      "keyBehaviors": [
+        "Select an exercise type from the patient's preferred list, filtered by mobility level and indoor/outdoor availability",
+        "Deliver warm-up, sustain, and cool-down phases as separate single-step instructions",
+        "Track elapsed duration and, when reported, step count or distance",
+        "Prefer outdoor scheduling when the time block calls for sunlight exposure to support circadian regulation"
+      ]
+    },
+    {
+      "id": "dual-task-training-coordinator",
+      "name": "Dual-Task Training Coordinator",
+      "description": "Pairs a motor activity (walking, marching, ball bouncing) with a lightweight cognitive micro-task to train attentional allocation.",
+      "keyBehaviors": [
+        "Start with a motor-only warm-up before layering in a cognitive task",
+        "Source the cognitive micro-task by invoking the Cognitive & Brain Training Agent's cognitive-exercise-generator capability",
+        "Monitor for task interference (slowed gait, lost count, dropped ball) as a signal of overload",
+        "Drop back to motor-only or simplify the cognitive task on interference — never run both tasks at full difficulty for moderate/severe stage"
+      ]
+    },
+    {
+      "id": "motor-safety-assessment",
+      "name": "Motor Skill & Safety Assessment",
+      "description": "Collects informal, caregiver/patient-reported signals on steadiness and balance since the agent has no sensor input.",
+      "keyBehaviors": [
+        "Prompt for qualitative steadiness/gait/support-needed checks at natural session checkpoints",
+        "Log near-fall or fall incidents as a distinct, high-priority signal",
+        "Never infer physical state beyond what is explicitly reported"
+      ]
+    },
+    {
+      "id": "adaptive-intensity-safety-controller",
+      "name": "Adaptive Intensity & Safety Controller",
+      "description": "Adjusts duration, pace, and dual-task complexity based on disease stage, mobility limitations, and exertion/safety signals.",
+      "keyBehaviors": [
+        "Set per-stage duration and intensity ceilings (mild, moderate, severe)",
+        "Respect stored physical limitations (e.g. cane use, joint precautions) when selecting activity type",
+        "Immediately stop — not just step down — on reported dizziness, pain, chest discomfort, or a fall/near-fall",
+        "Step down intensity after fatigue or dual-task interference; never escalate on a failed or incomplete attempt"
+      ]
+    },
+    {
+      "id": "engagement-fatigue-exertion-monitor",
+      "name": "Engagement, Fatigue & Exertion Monitor",
+      "description": "Detects disengagement, physical fatigue, or distress and triggers pause, stop, or graceful session exit.",
+      "keyBehaviors": [
+        "Detect long response latency, refusal language, or reported breathlessness/pain as exertion cues",
+        "Trigger immediate pause or stop on any safety-flagged symptom",
+        "Enforce one-instruction-at-a-time delivery throughout"
+      ]
+    },
+    {
+      "id": "feedback-encouragement-layer",
+      "name": "Feedback & Encouragement Layer",
+      "description": "Generates positive, non-corrective reinforcement regardless of performance.",
+      "keyBehaviors": [
+        "Provide positive reinforcement for effort and participation, not just successful completion",
+        "Redirect gently on missed steps or dropped dual-task components instead of flagging errors",
+        "Avoid harsh or explicit correction"
+      ]
+    },
+    {
+      "id": "progress-mobility-trend-tracking",
+      "name": "Progress & Mobility Trend Tracking",
+      "description": "Logs per-session performance longitudinally as an informal mobility/coordination trend signal.",
+      "keyBehaviors": [
+        "Log session completion, duration achieved vs. target, and dual-task sustain rate",
+        "Compute longitudinal trend summaries for aerobic endurance, dual-task accuracy, and reported steadiness",
+        "Trends are informal signals only, not a clinical or fall-risk diagnostic"
+      ]
+    },
+    {
+      "id": "caregiver-reporting",
+      "name": "Caregiver/Clinician Reporting",
+      "description": "Summarizes session activity and distinguishes routine digests from urgent safety alerts.",
+      "keyBehaviors": [
+        "Generate daily/weekly digest of sessions completed, duration, and engagement level",
+        "Escalate fall/near-fall or distress-symptom incidents as an immediate alert, not batched into the digest",
+        "Highlight notable trend changes (e.g. declining session duration or repeated dual-task drop-off)"
+      ]
+    },
+    {
+      "id": "personalization-profile",
+      "name": "Personalization Profile",
+      "description": "Stores patient-specific context used to tailor exercise selection and pacing; extends the profile shared across agents.",
+      "keyBehaviors": [
+        "Store mobility level and known physical limitations (e.g. assistive device use, joint precautions)",
+        "Store preferred exercise types and indoor/outdoor preference",
+        "Store current disease-stage setting (shared with Cognitive/ADL/Social agents)"
+      ]
+    },
+    {
+      "id": "scheduler-integration",
+      "name": "Scheduler Integration",
+      "description": "Ties agent activation to the patient's daily schedule.",
+      "keyBehaviors": [
+        "Read assigned time blocks from daily schedule (e.g. outdoor aerobic exercise, light indoor dual-task exercise)",
+        "Auto-select Aerobic vs. Dual-Task module per time block and disease stage",
+        "Report completion status back to the schedule"
+      ]
+    }
+  ],
+  "sessionLifecycle": [
+    {
+      "step": 1,
+      "name": "Schedule check",
+      "description": "Check daily schedule and select module (Aerobic Exercise / Dual-Task Training) based on time block and disease stage."
+    },
+    {
+      "step": 2,
+      "name": "Activity preparation",
+      "description": "Load personalization profile (mobility, limitations, preferences) and select the exercise; for Dual-Task Training, fetch the cognitive micro-task from the Cognitive & Brain Training Agent."
+    },
+    {
+      "step": 3,
+      "name": "Instruction delivery",
+      "description": "Deliver one instruction at a time (warm-up, sustain, cool-down) and capture patient/caregiver-reported response."
+    },
+    {
+      "step": 4,
+      "name": "Adaptive adjustment",
+      "description": "Adaptive intensity & safety controller adjusts pace, duration, or dual-task complexity based on response and signals."
+    },
+    {
+      "step": 5,
+      "name": "Fatigue/safety interrupt",
+      "description": "Engagement/fatigue/exertion monitor can interrupt at any point, pausing or stopping and logging the reason; safety-flagged symptoms trigger an immediate caregiver alert."
+    },
+    {
+      "step": 6,
+      "name": "Session close",
+      "description": "Log session, update progress/mobility trend, and notify caregiver (routine digest, or immediate alert if a safety incident occurred)."
+    }
+  ],
+  "dataModel": [
+    {
+      "entity": "PatientProfile",
+      "fields": ["stage", "mobilityLevel", "physicalLimitations", "preferredExerciseTypes", "indoorOutdoorPreference"]
+    },
+    {
+      "entity": "ExerciseSessionItem",
+      "fields": ["exerciseType", "motorTask", "cognitiveTask", "targetDurationMin", "intensityLevel"]
+    },
+    {
+      "entity": "MotorSignalLog",
+      "fields": ["steadiness", "supportNeeded", "exertionLevel", "incidentFlag"]
+    },
+    {
+      "entity": "SessionLog",
+      "fields": ["module", "timestamp", "durationAchievedMin", "responses", "engagementScore", "fatigueFlag", "safetyIncident"]
+    },
+    {
+      "entity": "ProgressTrend",
+      "fields": ["domain", "rollingDurationMin", "rollingEngagement", "dualTaskSustainRate", "timeframe"]
+    }
+  ],
+  "integration": {
+    "sharedContext": [
+      "PatientProfile and stage setting shared with Cognitive/ADL/Social agents for consistent difficulty and intensity calibration",
+      "MobilityLevel and physicalLimitations shared with ADL agent for consistent task calibration"
+    ],
+    "crossAgentCalls": [
+      {
+        "caller": "Exercise & Motor Coordination Training Agent",
+        "capability": "cognitive-exercise-generator",
+        "providerAgent": "Cognitive & Brain Training AI Agent",
+        "usage": "Dual-Task Training sources its cognitive micro-task (counting, categorization, simple arithmetic) from the Cognitive & Brain Training Agent's exercise generator"
+      }
+    ]
+  },
+  "successMetrics": [
+    "Aerobic session completion rate and average duration achieved vs. target",
+    "Dual-task sustain rate (ability to hold both motor and cognitive task without dropping one)",
+    "Frequency of safety incidents (near-falls/falls) — expected to stay at or near zero",
+    "Frequency of fatigue/exertion-triggered pauses (expected to decrease over time)",
+    "Caregiver-reported physical engagement/mood improvement"
+  ]
+}

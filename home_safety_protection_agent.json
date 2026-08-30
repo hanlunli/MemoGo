@@ -1,0 +1,195 @@
+{
+  "agentId": "home-safety-protection-agent",
+  "agentName": "Home Safety & Protection AI Agent",
+  "category": "Home Safety & Protection",
+  "purpose": "Runs the Wandering Prevention and De-risking the Home Environment methods from the caregiving plan: maintains a room-by-room hazard checklist and a wandering-prevention device registry, continuously monitors sensor/device events for fire, gas, fall, medication-access, and elopement risk, and escalates emergencies to the caregiver — with checklist strictness and device recommendations calibrated to the patient's disease stage, mobility, and incident history.",
+  "coreModules": [
+    {
+      "id": "home-environment-derisking-checklist-engine",
+      "name": "Home Environment De-Risking Checklist Engine",
+      "description": "Maintains a per-room hazard checklist covering fire/gas, fall, and poisoning risks (gas shut-off valves, smoke detectors, outlet caps, grab bars, non-slip mats, nightlights, locked medication/chemical storage).",
+      "keyBehaviors": [
+        "Break home de-risking into a per-room checklist item (e.g. \"install non-slip mat in bathroom\", \"cap unused outlets in living room\") and never mark a room complete until every applicable item is addressed or explicitly deferred by the caregiver",
+        "Weight checklist priority by hazard severity so gas/fire and medication/chemical access items are surfaced ahead of clutter or lighting items",
+        "Reuse a stored checklist template per room type rather than re-deriving the hazard item list on every audit",
+        "Re-open a checklist item automatically if a later sensor event or caregiver report contradicts its \"resolved\" status (e.g. a smoke detector reports offline after being marked installed)"
+      ]
+    },
+    {
+      "id": "wandering-elopement-prevention-manager",
+      "name": "Wandering & Elopement Prevention Manager",
+      "description": "Manages the patient's identification, tracking, and door-security measures that reduce the risk of unsupervised wandering.",
+      "keyBehaviors": [
+        "Maintain a wandering-prevention device registry per patient: ID bracelet/clothing label, GPS wearable or tracking insole, door alarm/concealed lock, and wall-matching camouflage curtain, each with placement/wear status",
+        "Escalate to a GPS or tracking-device recommendation once wandering risk is flagged moderate or high, rather than relying on ID labels alone",
+        "Treat every entry/exit door as requiring an alarm, concealed lock, or camouflage measure by default once wandering risk rises above \"low\" for the patient's stage",
+        "Flag a device as needing caregiver attention when reported not worn, low battery, or bypassed, rather than assuming it is actively protecting the patient"
+      ]
+    },
+    {
+      "id": "real-time-hazard-event-monitor",
+      "name": "Real-Time Hazard & Device Event Monitor",
+      "description": "Ingests sensor and device events (smoke/gas alarms, door or geofence breaches, medication-cabinet access) and classifies severity for response.",
+      "keyBehaviors": [
+        "Classify each incoming event by hazard type (fire/gas, fall, wandering/elopement, unauthorized medication or chemical access) and severity (info, caution, emergency)",
+        "Treat any fire/gas detector trip or wandering geofence breach as emergency severity regardless of the patient's disease stage",
+        "De-duplicate repeated readings from the same device within a short window into a single active incident rather than re-alerting per reading",
+        "Hold an incident open until caregiver-confirmed resolution, not just until the sensor value returns to normal"
+      ]
+    },
+    {
+      "id": "emergency-escalation-alert-dispatcher",
+      "name": "Emergency Escalation & Alert Dispatcher",
+      "description": "Decides who is notified and how urgently based on event severity, escalating beyond the caregiver when unacknowledged.",
+      "keyBehaviors": [
+        "Send an immediate alert to the caregiver for any emergency-severity event, bypassing the routine digest entirely",
+        "Escalate to the family emergency contact (or emergency-services guidance) if the caregiver does not acknowledge an emergency alert within a defined window",
+        "Include hazard type, location, and last-known device status in every escalation, not just a generic alert",
+        "Never downgrade an unresolved emergency event to routine status merely because it has aged past the initial alert"
+      ]
+    },
+    {
+      "id": "device-equipment-inventory-tracker",
+      "name": "Device & Equipment Inventory Tracker",
+      "description": "Tracks the installation, battery, and maintenance status of every safety device from the checklist and the wandering-prevention registry.",
+      "keyBehaviors": [
+        "Record install date, last-verified date, and battery/maintenance status for each smoke detector, gas shut-off valve, grab bar, nightlight, door alarm, and wearable",
+        "Flag a device as overdue once it passes its stage-appropriate recheck interval, independent of whether an incident has occurred",
+        "Surface missing-but-required devices (e.g. no smoke detector logged for the kitchen) as open checklist gaps rather than silent omissions",
+        "Prioritize replacement/maintenance reminders by the hazard severity of the device's category"
+      ]
+    },
+    {
+      "id": "medication-hazardous-material-lockup-monitor",
+      "name": "Medication & Hazardous-Material Lockup Monitor",
+      "description": "Verifies medications, chemicals, and sharp objects remain in caregiver-controlled storage and flags unexpected access.",
+      "keyBehaviors": [
+        "Confirm each medication, cleaning-chemical, and sharp-object storage location is logged as locked/out-of-reach before marking the corresponding checklist item complete",
+        "Treat any patient-side access to a locked-storage item outside a caregiver-logged dosing/use event as an emergency-severity event",
+        "Never expose a self-administer-medication pathway; all dosing actions route through caregiver confirmation",
+        "Log every lockup verification and access event regardless of whether an incident occurred"
+      ]
+    },
+    {
+      "id": "adaptive-risk-calibration-controller",
+      "name": "Adaptive Risk Calibration Controller",
+      "description": "Adjusts the wandering-risk level and hazard-checklist priority as the patient's stage, mobility, and incident history change.",
+      "keyBehaviors": [
+        "Raise wandering-risk level and checklist strictness as disease stage advances; never lower either automatically on stage progression",
+        "Escalate risk level after any wandering or hazard-access incident, and require explicit caregiver confirmation before de-escalating it back down",
+        "Recalibrate device recommendations (e.g. add a GPS wearable) as soon as risk level crosses a threshold, rather than waiting for the next scheduled audit",
+        "Reflect mobility/physical-limitation changes from the shared profile into fall-hazard checklist priority (grab bars, non-slip mats, clutter)"
+      ]
+    },
+    {
+      "id": "caregiver-reporting",
+      "name": "Caregiver/Clinician Reporting",
+      "description": "Summarizes safety-audit and incident activity, distinguishing routine digests from urgent alerts.",
+      "keyBehaviors": [
+        "Generate a daily/weekly digest of checklist completion, device status changes, and non-emergency events",
+        "Escalate every emergency-severity event as an immediate alert per the escalation dispatcher, never batched into the digest",
+        "Highlight notable trend changes (e.g. a rising count of low-battery devices or a newly elevated wandering-risk level)"
+      ]
+    },
+    {
+      "id": "personalization-profile",
+      "name": "Personalization Profile",
+      "description": "Stores patient- and home-specific context used to tailor the checklist, device registry, and risk calibration; extends the profile shared across agents.",
+      "keyBehaviors": [
+        "Store the home layout (rooms, doors, exits) and current wandering-risk level",
+        "Store the wandering-prevention device registry and home de-risking checklist status",
+        "Store emergency contacts (family, neighbors) and preferred escalation order",
+        "Store current disease-stage and mobility/physical-limitation settings (shared with Cognitive/Exercise/ADL/Social agents)"
+      ]
+    },
+    {
+      "id": "scheduler-integration",
+      "name": "Scheduler Integration",
+      "description": "Ties scheduled safety audits to the patient's routine while keeping hazard/wandering monitoring continuous and event-driven.",
+      "keyBehaviors": [
+        "Read the recurring home-safety-audit time block (e.g. weekly walkthrough) from the daily schedule and auto-select the room/checklist to review",
+        "Run hazard and wandering monitoring continuously and independent of the schedule, since sensor events can occur at any time",
+        "Report audit completion status back to the schedule, and log event-driven sessions outside the schedule as unscheduled entries"
+      ]
+    }
+  ],
+  "sessionLifecycle": [
+    {
+      "step": 1,
+      "name": "Trigger check",
+      "description": "A session opens either because the daily schedule surfaces a home-safety-audit block, or because the real-time hazard event monitor ingests a sensor/device event."
+    },
+    {
+      "step": 2,
+      "name": "Context load",
+      "description": "Load the personalization profile (home layout, device registry, checklist status, wandering-risk level) and, for an event-driven session, the specific device and location involved."
+    },
+    {
+      "step": 3,
+      "name": "Audit walkthrough / incident triage",
+      "description": "For a scheduled session, deliver one checklist item at a time (room, hazard, expected mitigation) and capture the caregiver-confirmed status; for an event-driven session, classify hazard type, severity, and location."
+    },
+    {
+      "step": 4,
+      "name": "Adaptive action",
+      "description": "The adaptive risk calibration controller updates checklist priority, wandering-risk level, or device recommendations based on the walkthrough result or event severity."
+    },
+    {
+      "step": 5,
+      "name": "Escalation interrupt",
+      "description": "The emergency escalation & alert dispatcher can interrupt at any point on an emergency-severity event, notifying the caregiver immediately and escalating further if unacknowledged."
+    },
+    {
+      "step": 6,
+      "name": "Session close",
+      "description": "Log the session (checklist items reviewed or event handled), update device/checklist status and the risk trend, and notify the caregiver (routine digest, or immediate alert already sent if an emergency occurred)."
+    }
+  ],
+  "dataModel": [
+    {
+      "entity": "PatientProfile",
+      "fields": ["stage", "mobilityLevel", "physicalLimitations", "homeLayout", "wanderingRiskLevel", "emergencyContacts"]
+    },
+    {
+      "entity": "HomeSafetyChecklistItem",
+      "fields": ["room", "hazardType", "mitigationItem", "status", "lastVerifiedDate", "priority"]
+    },
+    {
+      "entity": "WanderingPreventionDevice",
+      "fields": ["deviceType", "assignedTo", "location", "wornOrPlacedStatus", "batteryStatus", "lastVerifiedDate"]
+    },
+    {
+      "entity": "SafetyEventLog",
+      "fields": ["eventType", "hazardType", "severity", "sourceDevice", "location", "timestamp", "resolutionStatus", "actionTaken"]
+    },
+    {
+      "entity": "SessionLog",
+      "fields": ["module", "timestamp", "triggerType", "checklistItemsReviewed", "eventHandled", "escalationTriggered"]
+    },
+    {
+      "entity": "ProgressTrend",
+      "fields": ["domain", "checklistCompletionRate", "deviceUptimeRate", "incidentFrequency", "timeframe"]
+    }
+  ],
+  "integration": {
+    "sharedContext": [
+      "PatientProfile and stage/mobility settings shared with Cognitive/Exercise/ADL/Social agents for consistent difficulty and hazard calibration",
+      "HomeLayout and door list cross-referenced with the ADL agent's environmentalCueMap so wandering-prevention door measures (alarms, concealed locks, camouflage curtains) align with existing cue placements instead of a separately tracked door list"
+    ],
+    "crossAgentCalls": [
+      {
+        "caller": "Home Safety & Protection AI Agent",
+        "capability": "environmental-cue-support-manager",
+        "providerAgent": "Activities of Daily Living (ADL) Training AI Agent",
+        "usage": "Before placing a wandering-prevention door measure, reads the ADL agent's environmental cue map to know which doors already carry cue labeling, so the measure is layered onto the existing label rather than tracked as a separate, possibly conflicting door entry"
+      }
+    ]
+  },
+  "successMetrics": [
+    "Home safety checklist completion rate by hazard category (fire/gas, fall, medication/chemical, wandering) and by room",
+    "Device uptime / battery-health compliance rate for installed safety devices (smoke detectors, gas shut-off valves, GPS wearables, door alarms)",
+    "Wandering/elopement incident frequency and mean time to caregiver alert acknowledgment (goal: zero incidents, low time-to-acknowledgment)",
+    "Frequency of hazard incidents (burns, falls, unauthorized medication/chemical access) — goal: zero — and mean time to caregiver escalation",
+    "Caregiver-reported confidence in home safety and reduction in direct-supervision burden"
+  ]
+}

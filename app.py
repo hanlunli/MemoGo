@@ -17,6 +17,12 @@ from agents.exercise_motor_coordination_training import ExerciseMotorCoordinatio
 from agents.exercise_motor_coordination_training import DiseaseStage as ExerciseDiseaseStage
 from agents.exercise_motor_coordination_training import PatientProfile as ExercisePatientProfile
 from agents.exercise_motor_coordination_training.llm_logging import configure_logging as configure_exercise_logging
+from agents.home_safety_protection import HazardType, HomeSafetyProtectionAgent, IncidentEvent
+from agents.home_safety_protection import DiseaseStage as HomeSafetyDiseaseStage
+from agents.home_safety_protection import MobilityLevel as HomeSafetyMobilityLevel
+from agents.home_safety_protection import PatientProfile as HomeSafetyPatientProfile
+from agents.home_safety_protection import WanderingRiskLevel
+from agents.home_safety_protection.llm_logging import configure_logging as configure_home_safety_logging
 from agents.social_creative_engagement_training import FineMotorLevel, SocialContact, SocialCreativeEngagementTrainingAgent
 from agents.social_creative_engagement_training import DiseaseStage as SocialDiseaseStage
 from agents.social_creative_engagement_training import PatientProfile as SocialPatientProfile
@@ -27,12 +33,14 @@ configure_cognitive_logging()
 configure_exercise_logging()
 configure_adl_logging()
 configure_social_logging()
+configure_home_safety_logging()
 
 AGENT_LABELS = {
     "cognitive": "🧠 Cognitive & Brain Training",
     "exercise": "🏃 Exercise & Motor Coordination Training",
     "adl": "🧺 Activities of Daily Living (ADL) Training",
     "social": "🎨 Social & Creative Engagement Training",
+    "home_safety": "🏠 Home Safety & Protection",
 }
 
 COGNITIVE_SCHEDULE_OPTIONS = [
@@ -54,6 +62,10 @@ ADL_SCHEDULE_OPTIONS = [
 SOCIAL_SCHEDULE_OPTIONS = [
     "13:00-14:30 Reminiscence & social engagement",
     "14:30-15:30 Fine motor skills & art therapy",
+]
+
+HOME_SAFETY_SCHEDULE_OPTIONS = [
+    "09:00-09:30 Weekly home safety walkthrough",
 ]
 
 STAGE_LABELS = {"mild": "Mild", "moderate": "Moderate", "severe": "Severe"}
@@ -88,6 +100,27 @@ SOCIAL_FINE_MOTOR_LABELS = {
 }
 
 CRAFT_OPTIONS = ["bead stringing", "origami", "watering plants", "drawing", "paper cutting"]
+
+HOME_SAFETY_MOBILITY_LABELS = {
+    HomeSafetyMobilityLevel.INDEPENDENT: "Independent",
+    HomeSafetyMobilityLevel.NEEDS_SUPERVISION: "Needs supervision",
+    HomeSafetyMobilityLevel.USES_ASSISTIVE_DEVICE: "Uses assistive device",
+}
+
+HOME_SAFETY_ROOM_OPTIONS = ["Kitchen", "Bathroom", "Bedroom", "Hallway"]
+
+HOME_SAFETY_RISK_LABELS = {
+    WanderingRiskLevel.LOW: "Low",
+    WanderingRiskLevel.MODERATE: "Moderate",
+    WanderingRiskLevel.HIGH: "High",
+}
+
+HOME_SAFETY_HAZARD_LABELS = {
+    HazardType.FIRE_GAS: "Fire / gas alarm",
+    HazardType.FALL: "Fall detected",
+    HazardType.WANDERING: "Wandering / exit-door breach",
+    HazardType.MEDICATION_CHEMICAL_ACCESS: "Unauthorized medication/chemical access",
+}
 
 PROVIDER_LABELS = {
     "ollama": "Ollama (local, llama3.3)",
@@ -140,6 +173,11 @@ def get_social_agent(provider: str) -> SocialCreativeEngagementTrainingAgent:
     return SocialCreativeEngagementTrainingAgent(provider=provider)
 
 
+@st.cache_resource
+def get_home_safety_agent(provider: str) -> HomeSafetyProtectionAgent:
+    return HomeSafetyProtectionAgent(provider=provider)
+
+
 def get_agent(agent_kind: str, provider: str):
     if agent_kind == "cognitive":
         return get_cognitive_agent(provider)
@@ -147,6 +185,8 @@ def get_agent(agent_kind: str, provider: str):
         return get_exercise_agent(provider)
     if agent_kind == "adl":
         return get_adl_agent(provider)
+    if agent_kind == "home_safety":
+        return get_home_safety_agent(provider)
     return get_social_agent(provider)
 
 
@@ -163,6 +203,22 @@ def start_new_session(agent_kind: str, provider: str, patient, schedule_activity
     try:
         thread_id, step = agent.start_session(
             patient=patient, schedule_activity=schedule_activity, max_turns=max_turns, **kwargs
+        )
+    except Exception as exc:
+        st.error(f"Could not start the session: {exc}")
+        return
+    st.session_state["agent_kind"] = agent_kind
+    st.session_state["provider"] = provider
+    st.session_state["thread_id"] = thread_id
+    st.session_state["step"] = step
+    st.session_state["prompt_started_at"] = time.monotonic()
+
+
+def start_incident_session(agent_kind: str, provider: str, patient, incident_event, max_turns: int) -> None:
+    agent = get_agent(agent_kind, provider)
+    try:
+        thread_id, step = agent.start_incident_session(
+            patient=patient, incident_event=incident_event, max_turns=max_turns
         )
     except Exception as exc:
         st.error(f"Could not start the session: {exc}")
@@ -300,6 +356,61 @@ def render_social_fields(name: str, stage_value: str, provider: str) -> None:
             start_new_session("social", provider, patient, schedule_activity, max_turns)
 
 
+def render_home_safety_fields(name: str, stage_value: str, provider: str) -> None:
+    mobility_label = st.selectbox("Mobility level", options=list(HOME_SAFETY_MOBILITY_LABELS.values()), index=0)
+    mobility_level = next(m for m, label in HOME_SAFETY_MOBILITY_LABELS.items() if label == mobility_label)
+    limitations = st.text_input("Physical limitations (comma-separated)", value="")
+    home_rooms = st.multiselect("Rooms in the home", options=HOME_SAFETY_ROOM_OPTIONS, default=HOME_SAFETY_ROOM_OPTIONS)
+    risk_label = st.selectbox("Current wandering-risk level", options=list(HOME_SAFETY_RISK_LABELS.values()), index=0)
+    wandering_risk_level = next(r for r, label in HOME_SAFETY_RISK_LABELS.items() if label == risk_label)
+    emergency_contacts = st.text_input("Emergency contacts (comma-separated)", value="Daughter Amy")
+
+    session_type = st.radio(
+        "Session type", options=["Scheduled home safety audit", "Simulate a hazard/wandering event"], index=0
+    )
+
+    if session_type == "Scheduled home safety audit":
+        schedule_activity = st.selectbox("Current schedule activity", options=HOME_SAFETY_SCHEDULE_OPTIONS, index=0)
+        max_turns = st.slider("Number of checklist items", min_value=1, max_value=12, value=6)
+
+        if st.button("Start new session", type="primary", use_container_width=True):
+            if _gemini_ready(provider):
+                patient = HomeSafetyPatientProfile(
+                    patient_id="gui-patient",
+                    name=name,
+                    stage=HomeSafetyDiseaseStage(stage_value),
+                    mobility_level=mobility_level,
+                    physical_limitations=[l.strip() for l in limitations.split(",") if l.strip()],
+                    home_rooms=home_rooms,
+                    wandering_risk_level=wandering_risk_level,
+                    emergency_contacts=[c.strip() for c in emergency_contacts.split(",") if c.strip()],
+                )
+                start_new_session("home_safety", provider, patient, schedule_activity, max_turns)
+    else:
+        hazard_label = st.selectbox("Hazard type", options=list(HOME_SAFETY_HAZARD_LABELS.values()), index=0)
+        hazard_type = next(h for h, label in HOME_SAFETY_HAZARD_LABELS.items() if label == hazard_label)
+        location = st.text_input("Location", value="Kitchen")
+        source_device = st.text_input("Source device", value="Smoke detector")
+        description = st.text_input("Device description (optional)", value="")
+
+        if st.button("Simulate event", type="primary", use_container_width=True):
+            if _gemini_ready(provider):
+                patient = HomeSafetyPatientProfile(
+                    patient_id="gui-patient",
+                    name=name,
+                    stage=HomeSafetyDiseaseStage(stage_value),
+                    mobility_level=mobility_level,
+                    physical_limitations=[l.strip() for l in limitations.split(",") if l.strip()],
+                    home_rooms=home_rooms,
+                    wandering_risk_level=wandering_risk_level,
+                    emergency_contacts=[c.strip() for c in emergency_contacts.split(",") if c.strip()],
+                )
+                incident_event = IncidentEvent(
+                    hazard_type=hazard_type, location=location, source_device=source_device, description=description
+                )
+                start_incident_session("home_safety", provider, patient, incident_event, max_turns=2)
+
+
 def render_sidebar() -> str:
     with st.sidebar:
         st.header("Training Category")
@@ -321,6 +432,8 @@ def render_sidebar() -> str:
             render_exercise_fields(name, stage_value, provider)
         elif agent_kind == "adl":
             render_adl_fields(name, stage_value, provider)
+        elif agent_kind == "home_safety":
+            render_home_safety_fields(name, stage_value, provider)
         else:
             render_social_fields(name, stage_value, provider)
 
@@ -349,10 +462,11 @@ def render_completed_session(step) -> None:
         st.success("Session complete!")
 
     for i, turn in enumerate(step.session_log.turns, start=1):
+        response = getattr(turn, "patient_response", None) or getattr(turn, "caregiver_response", None)
         with st.container(border=True):
             st.markdown(f"**Turn {i}**")
             st.write(f"Prompt: {turn.prompt}")
-            st.write(f"Response: {turn.patient_response}")
+            st.write(f"Response: {response}")
             st.write(f"Feedback: {turn.feedback}")
 
     if not alert and step.caregiver_summary:

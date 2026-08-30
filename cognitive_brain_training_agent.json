@@ -1,0 +1,185 @@
+{
+  "agentId": "cognitive-brain-training-agent",
+  "agentName": "Cognitive & Brain Training AI Agent",
+  "category": "Cognitive & Brain Training",
+  "purpose": "Runs the Reality Orientation, Reminiscence Therapy, and Memory & Calculation Exercise activities from the training plan, adapting content and pacing to the patient's disease stage and daily state.",
+  "coreModules": [
+    {
+      "id": "reality-orientation-engine",
+      "name": "Reality Orientation Engine",
+      "description": "Presents date/time/weather/location/person-identity prompts using calendar, clock, and family-photo cues.",
+      "keyBehaviors": [
+        "Prompt patient to confirm date, time, weather, location, and person identities",
+        "Use calendars, clocks, weather reports, or family photos as cues",
+        "Track correct/incorrect responses per orientation domain (time, place, person)",
+        "Flag drift/decline trends over time"
+      ]
+    },
+    {
+      "id": "reminiscence-session-manager",
+      "name": "Reminiscence Session Manager",
+      "description": "Guides reminiscence therapy sessions using a patient-specific memory bank.",
+      "keyBehaviors": [
+        "Pull items from memory bank tagged by decade/theme (photos, songs, life-story items)",
+        "Ask open-ended recall questions",
+        "Listen/record responses and log engagement duration",
+        "No pass/fail evaluation — engagement only"
+      ]
+    },
+    {
+      "id": "cognitive-exercise-generator",
+      "name": "Cognitive Exercise Generator",
+      "description": "Produces graded cognitive tasks targeting memory, attention, executive function, and language.",
+      "keyBehaviors": [
+        "Generate arithmetic tasks (configurable range, e.g. addition/subtraction within 100)",
+        "Generate word association, picture recognition, and puzzle/mahjong-style logic tasks",
+        "Tag item bank by difficulty and targeted cognitive domain"
+      ]
+    },
+    {
+      "id": "adaptive-difficulty-controller",
+      "name": "Adaptive Difficulty Controller",
+      "description": "Adjusts exercise difficulty and session length based on disease stage and real-time signals.",
+      "keyBehaviors": [
+        "Adjust difficulty based on disease stage (mild, moderate, severe)",
+        "Adjust based on recent accuracy trend",
+        "Adjust based on real-time fatigue/frustration signals",
+        "Step down difficulty after repeated errors — never escalate on failure"
+      ]
+    },
+    {
+      "id": "engagement-fatigue-monitor",
+      "name": "Engagement & Fatigue Monitor",
+      "description": "Detects disengagement or fatigue and triggers pause or graceful session exit.",
+      "keyBehaviors": [
+        "Detect long response latency, repeated non-response, or negative affect cues",
+        "Trigger session pause or graceful exit on fatigue/resistance",
+        "Enforce one-instruction-at-a-time delivery"
+      ]
+    },
+    {
+      "id": "feedback-encouragement-layer",
+      "name": "Feedback & Encouragement Layer",
+      "description": "Generates positive, non-corrective reinforcement regardless of accuracy.",
+      "keyBehaviors": [
+        "Provide positive reinforcement for all responses",
+        "Redirect gently on incorrect answers instead of flagging errors",
+        "Avoid harsh or explicit correction"
+      ]
+    },
+    {
+      "id": "progress-assessment-tracking",
+      "name": "Progress & Assessment Tracking",
+      "description": "Logs per-domain performance longitudinally as an informal cognitive trend signal.",
+      "keyBehaviors": [
+        "Log orientation accuracy, exercise completion, reminiscence engagement duration",
+        "Compute longitudinal trend summaries per cognitive domain",
+        "Trends are informal signals only, not a clinical diagnostic"
+      ]
+    },
+    {
+      "id": "caregiver-reporting",
+      "name": "Caregiver/Clinician Reporting",
+      "description": "Summarizes session activity and alerts on significant negative trends.",
+      "keyBehaviors": [
+        "Generate daily/weekly digest of sessions completed and engagement level",
+        "Highlight notable behavior changes (e.g. sudden drop in orientation accuracy)",
+        "Alert on significant negative trend or repeated session abandonment"
+      ]
+    },
+    {
+      "id": "personalization-profile",
+      "name": "Personalization Profile",
+      "description": "Stores patient-specific context used to tailor all modules.",
+      "keyBehaviors": [
+        "Store biography, preferred music/photos/topics",
+        "Store known triggers to avoid",
+        "Store language/cultural context",
+        "Store current disease-stage setting"
+      ]
+    },
+    {
+      "id": "scheduler-integration",
+      "name": "Scheduler Integration",
+      "description": "Ties agent activation to the patient's daily schedule.",
+      "keyBehaviors": [
+        "Read assigned time blocks from daily schedule",
+        "Auto-select module per time block and disease stage",
+        "Report completion status back to the schedule"
+      ]
+    }
+  ],
+  "sessionLifecycle": [
+    {
+      "step": 1,
+      "name": "Schedule check",
+      "description": "Check daily schedule and select module (Reality Orientation / Reminiscence / Exercise) based on time block and disease stage."
+    },
+    {
+      "step": 2,
+      "name": "Content preparation",
+      "description": "Load personalization profile and generate/select content."
+    },
+    {
+      "step": 3,
+      "name": "Instruction delivery",
+      "description": "Deliver one instruction at a time and capture patient response."
+    },
+    {
+      "step": 4,
+      "name": "Adaptive adjustment",
+      "description": "Adaptive difficulty controller adjusts the next item based on response and signals."
+    },
+    {
+      "step": 5,
+      "name": "Fatigue interrupt",
+      "description": "Engagement & fatigue monitor can interrupt at any point, pausing and logging the reason, with an option to resume later."
+    },
+    {
+      "step": 6,
+      "name": "Session close",
+      "description": "Log session, update progress trend, and optionally notify caregiver."
+    }
+  ],
+  "dataModel": [
+    {
+      "entity": "PatientProfile",
+      "fields": ["stage", "biography", "preferences", "triggers"]
+    },
+    {
+      "entity": "ExerciseItem",
+      "fields": ["type", "domain", "difficulty", "content"]
+    },
+    {
+      "entity": "MemoryItem",
+      "fields": ["mediaType", "theme", "decade"]
+    },
+    {
+      "entity": "SessionLog",
+      "fields": ["module", "timestamp", "responses", "engagementScore", "fatigueFlag"]
+    },
+    {
+      "entity": "ProgressTrend",
+      "fields": ["domain", "rollingAccuracy", "rollingEngagement", "timeframe"]
+    }
+  ],
+  "integration": {
+    "sharedContext": [
+      "PatientProfile and stage setting shared with Exercise/ADL/Social agents for consistent difficulty calibration"
+    ],
+    "crossAgentCalls": [
+      {
+        "caller": "Exercise & Motor Coordination Agent",
+        "capability": "cognitive-exercise-generator",
+        "usage": "Dual-Task Training exercises invoke this agent's cognitive-task generator as a component"
+      }
+    ]
+  },
+  "successMetrics": [
+    "Session completion rate",
+    "Engagement duration",
+    "Orientation accuracy trend",
+    "Frequency of fatigue-triggered pauses (expected to decrease over time)",
+    "Caregiver-reported mood/behavior improvement"
+  ]
+}

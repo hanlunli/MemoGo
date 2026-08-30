@@ -1,0 +1,142 @@
+{
+  "trainingMethods": {
+    "overview": "For Alzheimer's disease (AD), training methods are primarily used to delay cognitive decline, maintain the ability to perform activities of daily living (ADLs), and improve emotional well-being. Non-pharmacological interventions often yield the best results when combined across multiple dimensions.",
+    "categories": [
+      {
+        "name": "Cognitive & Brain Training",
+        "methods": [
+          {
+            "name": "Reality Orientation Therapy (ROT)",
+            "description": "Repeatedly guide patients daily to confirm time, location, and person identities using calendars, clocks, weather reports, or family photos to reduce spatio-temporal confusion."
+          },
+          {
+            "name": "Reminiscence Therapy",
+            "description": "Use old photos, classic songs, or nostalgic items to trigger long-term memory and encourage patients to share stories from their past, which significantly boosts their mood and social engagement."
+          },
+          {
+            "name": "Targeted Memory & Calculation Exercises",
+            "description": "Engage in simple arithmetic (e.g., addition and subtraction within 100), word associations, picture recognition, playing mahjong, or solving puzzles to stimulate hippocampus and frontal lobe functions."
+          }
+        ]
+      },
+      {
+        "name": "Exercise & Motor Coordination Training",
+        "methods": [
+          {
+            "name": "Aerobic Exercise",
+            "description": "30 minutes of low-to-moderate intensity daily exercise (such as brisk walking, Tai Chi, Baduanjin, or square dancing) increases cerebral blood flow and oxygen supply while promoting the release of neurotrophic factors."
+          },
+          {
+            "name": "Dual-Task Training",
+            "description": "Combining physical and cognitive tasks—such as counting while walking or answering simple questions while bouncing a ball—effectively trains the brain's attentional allocation and coordination control."
+          }
+        ]
+      },
+      {
+        "name": "Activities of Daily Living (ADL) Training",
+        "methods": [
+          {
+            "name": "Functional Life Reshaping",
+            "description": "Breaking down daily activities (such as dressing, brushing teeth, or tidying a desk) into \"prompt-demonstrate-assist\" steps encourages patients to perform tasks independently and prevents rapid functional decline."
+          },
+          {
+            "name": "Environmental Cue Support",
+            "description": "Placing prominent text or icon labels on doors (e.g., \"Bathroom\" or \"Bedroom\") reduces anxiety caused by spatial disorientation."
+          }
+        ]
+      },
+      {
+        "name": "Social & Creative Engagement",
+        "methods": [
+          {
+            "name": "Music Therapy",
+            "description": "Playing familiar songs from the patient's youth to guide rhythmic clapping or singing along significantly improves mood swings and mitigates Behavioral and Psychological Symptoms of Dementia (BPSD)."
+          },
+          {
+            "name": "Crafts & Horticulture",
+            "description": "Fine motor activities like stringing beads, origami, or watering plants maintain hand dexterity while instilling a sense of accomplishment."
+          }
+        ]
+      }
+    ],
+    "principles": [
+      "The core focus is on maximizing encouragement and minimizing corrections.",
+      "Training intensity should dynamically adapt to the patient's disease stage (mild, moderate, or severe) to avoid feelings of frustration and resistance."
+    ],
+    "executionGuidelines": [
+      {
+        "name": "Flexible Adjustments",
+        "description": "If the patient shows signs of fatigue, resistance, or loss of focus, pause the activity immediately—never force engagement."
+      },
+      {
+        "name": "Break Down Instructions",
+        "description": "Deliver one simple, concise command at a time (e.g., \"Please pick up this brush\" rather than multi-step requests)."
+      },
+      {
+        "name": "Encourage Over Correcting",
+        "description": "Prioritize the pleasure and sense of security derived from participation; refrain from harsh corrections even when mistakes occur."
+      }
+    ]
+  },
+  "dailySchedule": {
+    "targetStage": "mild",
+    "overview": "For individuals with mild Alzheimer's disease (AD), the daily routine should be structured, balanced between activity and rest, and tailored to a moderate difficulty level. Maintaining a consistent daily rhythm helps minimize anxiety and cognitive confusion.",
+    "blocks": [
+      {
+        "time": "07:30-08:30",
+        "activity": "Morning routine, hygiene & breakfast",
+        "goals": "Reality Orientation: Guide the patient to check the calendar for the date and weather; encourage independent grooming and dressing."
+      },
+      {
+        "time": "08:30-09:30",
+        "activity": "Outdoor aerobic exercise",
+        "goals": "Coordination & Oxygenation: 30–45 minutes of walking, Tai Chi, or Baduanjin; get sunlight exposure to regulate the circadian rhythm."
+      },
+      {
+        "time": "09:30-10:30",
+        "activity": "Targeted cognitive training",
+        "goals": "Brain Stimulation: Engage in puzzles, simple Sudoku, mahjong, picture recognition, or simple arithmetic (addition/subtraction within 100)."
+      },
+      {
+        "time": "10:30-11:30",
+        "activity": "Household chores",
+        "goals": "ADL Maintenance: Assign light tasks within their capability, such as sorting vegetables, wiping tables, or folding clothes."
+      },
+      {
+        "time": "11:30-13:00",
+        "activity": "Lunch & midday rest",
+        "goals": "Serve a balanced diet (referencing Mediterranean/MIND diets); allow a 30–45 minute afternoon nap after eating."
+      },
+      {
+        "time": "13:00-14:30",
+        "activity": "Reminiscence & social engagement",
+        "goals": "Remote Memory & Emotional Support: Look through old photo albums, listen to classic songs, share past stories, or chat with neighbors."
+      },
+      {
+        "time": "14:30-15:30",
+        "activity": "Fine motor skills & art therapy",
+        "goals": "Hand-Brain Coordination & Accomplishment: Water plants, do crafts (origami/beading), draw, or clap along to music."
+      },
+      {
+        "time": "15:30-16:30",
+        "activity": "Light indoor exercise",
+        "goals": "Dual-Task Training: Practice mental arithmetic while walking slowly, or name fruits while bouncing a ball."
+      },
+      {
+        "time": "16:30-18:00",
+        "activity": "Relaxation & dinner",
+        "goals": "Listen to soothing music, prepare and eat dinner, and keep the environment bright."
+      },
+      {
+        "time": "18:00-19:30",
+        "activity": "Indoor evening walk / TV time",
+        "goals": "Watch light documentaries or news; avoid intense, distressing, or overstimulating media content."
+      },
+      {
+        "time": "19:30-21:30",
+        "activity": "Bedtime prep & relaxation",
+        "goals": "Foot soak, listen to soft music, dim room lights, and encourage falling asleep before 21:30."
+      }
+    ]
+  }
+}
