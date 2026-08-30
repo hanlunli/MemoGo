@@ -1,0 +1,201 @@
+{
+  "agentId": "emotional-support-comfort-agent",
+  "agentName": "Emotional Support & Comfort AI Agent",
+  "category": "Emotional Support & Comfort",
+  "purpose": "Runs the Managing Sundowning, Empathy & Inclusivity, and Encouraging Independence methods from the caregiving plan, plus the detailed Coping Strategies for Sundowning and Emotional Outbursts protocol (environment/lighting adjustments, immediate de-escalation, daily prevention habits): proactively adjusts lighting, stimuli, and daily rhythm ahead of the dusk/sundowning window, coaches the caregiver through a non-confrontational, validate-and-redirect de-escalation script during an active outburst, and encourages safe, manageable independence tasks — logging every episode to the Sundowning Journal to identify and prevent recurring triggers.",
+  "coreModules": [
+    {
+      "id": "sundowning-prevention-scheduler",
+      "name": "Sundowning Prevention Scheduler",
+      "description": "Proactively adjusts the home environment, stimuli, and daily rhythm ahead of the dusk/evening sundowning window rather than only reacting once agitation appears.",
+      "keyBehaviors": [
+        "Trigger environment prep (curtains drawn, bright warm indoor lights on, TVs/radios off, reduced household traffic) automatically ahead of the patient's dusk/sundowning window, by default around 4:00 PM unless the profile records a different onset time",
+        "Schedule 30-60 minutes of outdoor morning sunlight and light daytime activity (watering plants, drawing) to regulate circadian rhythm, and cap unstructured daytime naps",
+        "Restrict caffeine and high-sugar intake in the afternoon/evening, keep dinner light, and offer a warm milk or gentle hot drink before bedtime",
+        "Flag any caregiver-proposed room change, bath, or guest visit that falls inside the dusk/prevention window for explicit confirmation rather than scheduling it silently"
+      ]
+    },
+    {
+      "id": "emotional-outburst-de-escalation-coach",
+      "name": "Emotional Outburst De-Escalation Coach",
+      "description": "Delivers real-time, step-by-step de-escalation coaching to the caregiver during an active emotional outburst, following the non-confrontational, validate-and-redirect protocol.",
+      "keyBehaviors": [
+        "Never deliver or suggest a correction, blame, or logic-based argument in response to distress; always lead with validating the patient's emotional state before anything else",
+        "Guide redirection using familiar vintage items, soft classic/old songs, light snacks, or simple hands-on micro-tasks (folding towels or clothes), pulling songs/photos from the Cognitive Agent's shared memory bank or invoking the Social & Creative Engagement Agent's music-therapy-session-engine directly rather than maintaining a separate redirection library",
+        "Coach the caregiver's delivery in every attempt: lower voice, slow speech, short comforting phrases (e.g. \"It's okay, I'm right here\"), gentle eye contact, and light touch/hand-holding only after confirming from the profile that the patient does not resist physical contact",
+        "Escalate to caregiver reporting as an immediate alert if de-escalation attempts fail to reduce agitation after a bounded number of tries, rather than repeating the same script indefinitely"
+      ]
+    },
+    {
+      "id": "empathy-validation-communication-engine",
+      "name": "Empathy & Validation Communication Engine",
+      "description": "Coaches listening, acceptance, and redirection responses whenever the patient is confused or repeats a question, in place of direct correction or argument.",
+      "keyBehaviors": [
+        "Respond to a repeated question or confusion with listening/acceptance/redirection every time, regardless of how many times it has already been asked in the session",
+        "Never phrase a response to a repeated question in a way that reads as impatient, corrective, or \"already answered\"",
+        "Offer a redirection topic or activity drawn from the patient's preferences only after acknowledging the emotion, never before",
+        "Log correction-avoidance adherence as a caregiver-coaching quality signal, not as a patient behavior metric"
+      ]
+    },
+    {
+      "id": "independence-self-esteem-encouragement-manager",
+      "name": "Independence & Self-Esteem Encouragement Manager",
+      "description": "Offers manageable, safe tasks (folding clothes, watering plants) to preserve the patient's self-esteem and functional skills where mood and safety allow.",
+      "keyBehaviors": [
+        "Offer a manageable task drawn from the patient's ability profile whenever current mood/agitation state allows it, rather than defaulting to passive activities",
+        "Never select a task above the safety or fine-motor ceiling shared from the ADL and Social & Creative Engagement agents",
+        "Frame every outcome around effort and participation, never correctness",
+        "Track offered-vs-accepted task frequency as an independence-engagement trend rather than a performance score"
+      ]
+    },
+    {
+      "id": "mood-agitation-signal-monitor",
+      "name": "Mood & Agitation Signal Monitor",
+      "description": "Continuously watches for agitation, anxiety, or hallucination signals across the whole day, independent of any single scheduled activity block.",
+      "keyBehaviors": [
+        "Continuously ingest caregiver-reported or interaction-derived agitation, anxiety, or hallucination signals throughout the day, not only during a scheduled emotional-support block",
+        "Classify signal severity (mild restlessness vs. active outburst) to decide between a gentle prevention nudge and full de-escalation coaching",
+        "Treat any signal occurring inside the dusk/evening window as elevated priority given the patient's known sundowning risk",
+        "Hand off immediately to the emotional-outburst-de-escalation-coach on outburst-level severity, interrupting any other in-progress agent session"
+      ]
+    },
+    {
+      "id": "sundowning-journal-trigger-tracker",
+      "name": "Sundowning Journal & Trigger Tracker",
+      "description": "Logs every sundowning/emotional-outburst episode to the Sundowning Journal template and correlates entries to identify recurring triggers.",
+      "keyBehaviors": [
+        "Log every episode against the Sundowning Journal fields: date, timeOfOnset, precedingEvent, foodOrDrinkIntake, environmentalFactor, symptomsObserved, interventionUsed, outcome",
+        "Correlate logged episodes for recurring antecedents (specific foods, visitors, times of day) and surface them as candidate triggers rather than treating each episode independently",
+        "Feed identified triggers back into the sundowning-prevention-scheduler's environment-prep and avoid-list",
+        "Never discard an episode log entry, even when de-escalation succeeded quickly, since prevention analysis needs the full history"
+      ]
+    },
+    {
+      "id": "caregiver-reporting",
+      "name": "Caregiver/Clinician Reporting",
+      "description": "Summarizes prevention-habit adherence, episode activity, and de-escalation outcomes, distinguishing routine digests from urgent alerts.",
+      "keyBehaviors": [
+        "Generate a daily/weekly digest of prevention-habit adherence (morning sunlight, environment prep, caffeine/sugar/nap limits), episodes logged, and independence-task activity",
+        "Escalate a failed-to-de-escalate outburst as an immediate alert, never batched into the digest",
+        "Highlight notable trend changes (e.g. a rising episode frequency, a newly identified trigger, or a declining de-escalation success rate)"
+      ]
+    },
+    {
+      "id": "personalization-profile",
+      "name": "Personalization Profile",
+      "description": "Stores patient-specific emotional-support context used to tailor prevention scheduling, de-escalation coaching, and independence tasks; extends the profile shared across agents.",
+      "keyBehaviors": [
+        "Store sundowning risk level, typical onset time, and known/confirmed emotional triggers",
+        "Store calming preferences (comfort items, familiar songs, light snacks) and physical-contact tolerance (whether the patient accepts touch/hand-holding)",
+        "Store the independence-task ability baseline, cross-referenced with the ADL and Social & Creative Engagement agents' fine-motor/task-ability baselines",
+        "Store current disease-stage setting (shared with Cognitive/Exercise/ADL/Social/Home Safety/Daily Life agents)"
+      ]
+    },
+    {
+      "id": "scheduler-integration",
+      "name": "Scheduler Integration",
+      "description": "Anchors the sundowning-prevention routine to the daily schedule while keeping mood/agitation monitoring continuous and event-driven.",
+      "keyBehaviors": [
+        "Read the sundowning-prevention window and any emotional-support time block from the daily schedule and auto-trigger environment prep and daily prevention habits",
+        "Run mood/agitation monitoring continuously and independent of the schedule, since an outburst can occur at any time",
+        "Report prevention-block completion status back to the schedule, and log event-driven de-escalation sessions as unscheduled entries"
+      ]
+    }
+  ],
+  "sessionLifecycle": [
+    {
+      "step": 1,
+      "name": "Trigger check",
+      "description": "A session opens either because the daily schedule surfaces the sundowning-prevention window, or because the mood & agitation signal monitor detects a distress signal."
+    },
+    {
+      "step": 2,
+      "name": "Context load",
+      "description": "Load the personalization profile (risk level, known triggers, calming preferences, contact tolerance, independence-task baseline) and the Sundowning Journal history."
+    },
+    {
+      "step": 3,
+      "name": "Prevention delivery / outburst de-escalation",
+      "description": "For a scheduled window, deliver environment prep and daily prevention habits; for an event-driven session, the emotional-outburst-de-escalation-coach delivers the validate-and-redirect script one step at a time."
+    },
+    {
+      "step": 4,
+      "name": "Adaptive action",
+      "description": "Offer an independence task or a redirection activity selected from the patient's preferences and current mood/agitation state, informed by the trigger tracker."
+    },
+    {
+      "step": 5,
+      "name": "Escalation interrupt",
+      "description": "If de-escalation attempts fail to reduce agitation after a bounded number of tries, escalate to the caregiver as an immediate alert, interrupting any other in-progress agent session."
+    },
+    {
+      "step": 6,
+      "name": "Session close",
+      "description": "Log the episode or prevention block to the Sundowning Journal, update the trigger-correlation and engagement trends, and notify the caregiver (routine digest, or immediate alert already sent if de-escalation failed)."
+    }
+  ],
+  "dataModel": [
+    {
+      "entity": "PatientProfile",
+      "fields": ["stage", "sundowningRiskLevel", "typicalOnsetTime", "knownTriggers", "calmingPreferences", "physicalContactTolerance", "independenceTaskAbility"]
+    },
+    {
+      "entity": "SundowningPreventionBlock",
+      "fields": ["windowStart", "windowEnd", "environmentPrepStatus", "morningSunlightLogged", "napCaffeineSugarCompliance"]
+    },
+    {
+      "entity": "EmotionalOutburstEvent",
+      "fields": ["timestamp", "precedingEvent", "severity", "interventionUsed", "deEscalationAttempts", "outcome", "escalationTriggered"]
+    },
+    {
+      "entity": "SundowningJournalEntry",
+      "fields": ["date", "timeOfOnset", "precedingEvent", "foodOrDrinkIntake", "environmentalFactor", "symptomsObserved", "interventionUsed", "outcome"]
+    },
+    {
+      "entity": "IndependenceTaskLog",
+      "fields": ["taskType", "offered", "accepted", "moodContext"]
+    },
+    {
+      "entity": "SessionLog",
+      "fields": ["module", "timestamp", "triggerType", "interventionDelivered", "escalationTriggered"]
+    },
+    {
+      "entity": "ProgressTrend",
+      "fields": ["domain", "sundowningEpisodeFrequency", "deEscalationSuccessRate", "moodImprovementRate", "timeframe"]
+    }
+  ],
+  "integration": {
+    "sharedContext": [
+      "PatientProfile and stage setting shared with Cognitive/Exercise/ADL/Social/Home Safety/Daily Life agents for consistent difficulty and calibration",
+      "Independence-task ability cross-referenced with the ADL agent's task-ability baseline and the Social & Creative Engagement agent's fine-motor baseline, so offered tasks (folding clothes, watering plants) stay consistent with those agents' assistance-tier calibration",
+      "Calming-preference songs/photos shared with the Cognitive Agent's decade/theme-tagged memory bank and the Social & Creative Engagement agent's music preferences rather than a separately tracked list"
+    ],
+    "crossAgentCalls": [
+      {
+        "caller": "Emotional Support & Comfort AI Agent",
+        "capability": "music-therapy-session-engine",
+        "providerAgent": "Social & Creative Engagement Training AI Agent",
+        "usage": "The Emotional Outburst De-Escalation Coach invokes this capability directly for a familiar-song redirection option during an active outburst, alongside photo/story content pulled from the Cognitive Agent, rather than maintaining a separate playback path"
+      },
+      {
+        "caller": "Emotional Support & Comfort AI Agent",
+        "capability": "reminiscence-session-manager",
+        "providerAgent": "Cognitive & Brain Training AI Agent",
+        "usage": "Pulls a familiar photo/story item from the shared memory bank as a redirection option during Managing Sundowning or outburst de-escalation, instead of maintaining a separate photo library"
+      },
+      {
+        "caller": "Daily Life & Routine Management AI Agent",
+        "capability": "emotional-outburst-de-escalation-coach",
+        "providerAgent": "Emotional Support & Comfort AI Agent",
+        "usage": "When the routine deviation & disruption monitor's heightened-attention window following an unplanned environment change surfaces reported agitation, hands off to this agent's de-escalation coach rather than issuing its own calming guidance"
+      }
+    ]
+  },
+  "successMetrics": [
+    "Sundowning/emotional-outburst episode frequency and severity trend (goal: decreasing), tracked via the Sundowning Journal",
+    "De-escalation success rate and mean time-to-calm per outburst event",
+    "Prevention-habit adherence rate (morning sunlight block, evening environment prep, caffeine/sugar/nap limits)",
+    "Independence-task offer/acceptance rate as a self-esteem and engagement signal",
+    "Caregiver-reported confidence in handling outbursts and reduction in emotional-caregiving burden"
+  ]
+}

@@ -19,6 +19,10 @@ from agents.daily_life_routine_management import MobilityLevel as DailyLifeMobil
 from agents.daily_life_routine_management import PatientProfile as DailyLifePatientProfile
 from agents.daily_life_routine_management.llm_logging import configure_logging as configure_daily_life_logging
 from agents.daily_life_routine_management.models import CheckpointType
+from agents.emotional_support_comfort import EmotionalSupportComfortAgent, OutburstEvent, SundowningRiskLevel
+from agents.emotional_support_comfort import DiseaseStage as EmotionalDiseaseStage
+from agents.emotional_support_comfort import PatientProfile as EmotionalPatientProfile
+from agents.emotional_support_comfort.llm_logging import configure_logging as configure_emotional_logging
 from agents.exercise_motor_coordination_training import ExerciseMotorCoordinationTrainingAgent, MobilityLevel
 from agents.exercise_motor_coordination_training import DiseaseStage as ExerciseDiseaseStage
 from agents.exercise_motor_coordination_training import PatientProfile as ExercisePatientProfile
@@ -41,6 +45,7 @@ configure_adl_logging()
 configure_social_logging()
 configure_home_safety_logging()
 configure_daily_life_logging()
+configure_emotional_logging()
 
 AGENT_LABELS = {
     "cognitive": "🧠 Cognitive & Brain Training",
@@ -49,6 +54,7 @@ AGENT_LABELS = {
     "social": "🎨 Social & Creative Engagement Training",
     "home_safety": "🏠 Home Safety & Protection",
     "daily_life": "📅 Daily Life & Routine Management",
+    "emotional_support": "💛 Emotional Support & Comfort",
 }
 
 COGNITIVE_SCHEDULE_OPTIONS = [
@@ -158,6 +164,16 @@ DAILY_LIFE_DEVIATION_LABELS = {
     DeviationType.ENVIRONMENT_CHANGE: "Environment change",
 }
 
+EMOTIONAL_SCHEDULE_OPTIONS = [
+    "16:00-16:30 Sundowning prevention window",
+]
+
+EMOTIONAL_RISK_LABELS = {
+    SundowningRiskLevel.LOW: "Low",
+    SundowningRiskLevel.MODERATE: "Moderate",
+    SundowningRiskLevel.HIGH: "High",
+}
+
 PROVIDER_LABELS = {
     "ollama": "Ollama (local, llama3.3)",
     "gemini": "Gemini (cloud, needs GOOGLE_API_KEY)",
@@ -219,6 +235,11 @@ def get_daily_life_agent(provider: str) -> DailyLifeRoutineManagementAgent:
     return DailyLifeRoutineManagementAgent(provider=provider)
 
 
+@st.cache_resource
+def get_emotional_agent(provider: str) -> EmotionalSupportComfortAgent:
+    return EmotionalSupportComfortAgent(provider=provider)
+
+
 def get_agent(agent_kind: str, provider: str):
     if agent_kind == "cognitive":
         return get_cognitive_agent(provider)
@@ -230,6 +251,8 @@ def get_agent(agent_kind: str, provider: str):
         return get_home_safety_agent(provider)
     if agent_kind == "daily_life":
         return get_daily_life_agent(provider)
+    if agent_kind == "emotional_support":
+        return get_emotional_agent(provider)
     return get_social_agent(provider)
 
 
@@ -278,6 +301,22 @@ def start_deviation_session(agent_kind: str, provider: str, patient, deviation_e
     try:
         thread_id, step = agent.start_deviation_session(
             patient=patient, deviation_event=deviation_event, max_turns=max_turns
+        )
+    except Exception as exc:
+        st.error(f"Could not start the session: {exc}")
+        return
+    st.session_state["agent_kind"] = agent_kind
+    st.session_state["provider"] = provider
+    st.session_state["thread_id"] = thread_id
+    st.session_state["step"] = step
+    st.session_state["prompt_started_at"] = time.monotonic()
+
+
+def start_outburst_session(agent_kind: str, provider: str, patient, outburst_event, max_turns: int) -> None:
+    agent = get_agent(agent_kind, provider)
+    try:
+        thread_id, step = agent.start_outburst_session(
+            patient=patient, outburst_event=outburst_event, max_turns=max_turns
         )
     except Exception as exc:
         st.error(f"Could not start the session: {exc}")
@@ -529,6 +568,68 @@ def render_daily_life_fields(name: str, stage_value: str, provider: str) -> None
                 start_deviation_session("daily_life", provider, patient, deviation_event, max_turns=2)
 
 
+def render_emotional_fields(name: str, stage_value: str, provider: str) -> None:
+    risk_label = st.selectbox("Sundowning risk level", options=list(EMOTIONAL_RISK_LABELS.values()), index=0)
+    sundowning_risk_level = next(r for r, label in EMOTIONAL_RISK_LABELS.items() if label == risk_label)
+    known_triggers = st.text_input("Known triggers (comma-separated)", value="unfamiliar visitors")
+    calming_preferences = st.text_input(
+        "Calming preferences (comma-separated)", value="soft music from the 1960s, family photo album"
+    )
+    accepts_physical_contact = st.checkbox("Accepts light touch/hand-holding", value=True)
+    independence_tasks = st.text_input("Independence tasks (comma-separated)", value="folding clothes, watering plants")
+    emergency_contacts = st.text_input("Emergency contacts (comma-separated)", value="Daughter Amy")
+
+    session_type = st.radio(
+        "Session type", options=["Scheduled sundowning prevention", "Simulate an emotional outburst"], index=0
+    )
+
+    if session_type == "Scheduled sundowning prevention":
+        schedule_activity = st.selectbox("Current schedule activity", options=EMOTIONAL_SCHEDULE_OPTIONS, index=0)
+        max_turns = st.slider("Number of prevention steps", min_value=1, max_value=6, value=6)
+
+        if st.button("Start new session", type="primary", use_container_width=True):
+            if _gemini_ready(provider):
+                patient = EmotionalPatientProfile(
+                    patient_id="gui-patient",
+                    name=name,
+                    stage=EmotionalDiseaseStage(stage_value),
+                    sundowning_risk_level=sundowning_risk_level,
+                    known_triggers=[t.strip() for t in known_triggers.split(",") if t.strip()],
+                    calming_preferences=[c.strip() for c in calming_preferences.split(",") if c.strip()],
+                    accepts_physical_contact=accepts_physical_contact,
+                    independence_tasks=[t.strip() for t in independence_tasks.split(",") if t.strip()],
+                    emergency_contacts=[c.strip() for c in emergency_contacts.split(",") if c.strip()],
+                )
+                start_new_session("emotional_support", provider, patient, schedule_activity, max_turns)
+    else:
+        preceding_event = st.text_input("Preceding event", value="Unfamiliar visitor arrived at dusk")
+        symptoms = st.text_input("Symptoms observed (comma-separated)", value="pacing, raised voice")
+        environmental_factor = st.text_input("Environmental factor", value="Room was dim and noisy")
+        food_or_drink_intake = st.text_input("Recent food/drink intake", value="Coffee after 4pm")
+        max_turns = st.slider("Max de-escalation attempts", min_value=1, max_value=5, value=3)
+
+        if st.button("Simulate outburst", type="primary", use_container_width=True):
+            if _gemini_ready(provider):
+                patient = EmotionalPatientProfile(
+                    patient_id="gui-patient",
+                    name=name,
+                    stage=EmotionalDiseaseStage(stage_value),
+                    sundowning_risk_level=sundowning_risk_level,
+                    known_triggers=[t.strip() for t in known_triggers.split(",") if t.strip()],
+                    calming_preferences=[c.strip() for c in calming_preferences.split(",") if c.strip()],
+                    accepts_physical_contact=accepts_physical_contact,
+                    independence_tasks=[t.strip() for t in independence_tasks.split(",") if t.strip()],
+                    emergency_contacts=[c.strip() for c in emergency_contacts.split(",") if c.strip()],
+                )
+                outburst_event = OutburstEvent(
+                    preceding_event=preceding_event,
+                    symptoms_observed=[s.strip() for s in symptoms.split(",") if s.strip()],
+                    environmental_factor=environmental_factor,
+                    food_or_drink_intake=food_or_drink_intake,
+                )
+                start_outburst_session("emotional_support", provider, patient, outburst_event, max_turns=max_turns)
+
+
 def render_sidebar() -> str:
     with st.sidebar:
         st.header("Training Category")
@@ -554,6 +655,8 @@ def render_sidebar() -> str:
             render_home_safety_fields(name, stage_value, provider)
         elif agent_kind == "daily_life":
             render_daily_life_fields(name, stage_value, provider)
+        elif agent_kind == "emotional_support":
+            render_emotional_fields(name, stage_value, provider)
         else:
             render_social_fields(name, stage_value, provider)
 

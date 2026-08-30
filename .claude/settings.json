@@ -62,7 +62,10 @@
       "Bash(./venv/Scripts/python.exe -m pytest tests/test_daily_life_graph_build.py tests/test_daily_life_modules.py tests/test_daily_life_resilience.py -q)",
       "Bash(./venv/Scripts/python.exe -c \"import streamlit; print\\(streamlit.__version__\\)\")",
       "Bash(timeout 12 ./venv/Scripts/python.exe -m streamlit run app.py --server.headless true --server.port 8532)",
-      "Bash(echo \"exit_code=$?\")"
+      "Bash(echo \"exit_code=$?\")",
+      "Bash(git -C \"c:\\\\Users\\\\sj932053\\\\AIAgents\\\\MemoGo\" log --oneline -20)",
+      "Bash(python -c \"import json; json.load\\(open\\('emotional_support_comfort_agent.json'\\)\\); json.load\\(open\\('social_creative_engagement_training_agent.json'\\)\\); print\\('OK'\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('emotional_support_comfort_agent.json'\\)\\);JSON.parse\\(require\\('fs'\\).readFileSync\\('social_creative_engagement_training_agent.json'\\)\\);console.log\\('OK'\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\sj932053\\AIAgents\\MemoGo\\agents",

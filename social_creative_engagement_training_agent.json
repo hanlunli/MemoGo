@@ -193,7 +193,7 @@
         "usage": "The reminiscence & social engagement block invokes the Cognitive Agent's reminiscence-session-manager for the photo/story-sharing portion, then hands off to the Social Interaction Facilitator for the neighbor/family conversation portion; the Music Therapy Session Engine also draws songs from that agent's shared decade/theme-tagged memory bank instead of maintaining a separate song library"
       },
       {
-        "caller": "Home Safety, Routine & Emotional Care Agent",
+        "caller": "Emotional Support & Comfort AI Agent",
         "capability": "music-therapy-session-engine",
         "usage": "The Emotional Outburst De-Escalation Coach can invoke this agent's music-therapy-session-engine directly for a familiar-song redirection option, alongside the photo/song it already pulls via the Cognitive Agent"
       }
