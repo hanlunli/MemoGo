@@ -4,30 +4,51 @@ import time
 import streamlit as st
 from dotenv import load_dotenv
 
-from agents.cognitive_brain_training import CognitiveBrainTrainingAgent, DiseaseStage, PatientProfile
-from agents.cognitive_brain_training.llm_logging import configure_logging
+from agents.cognitive_brain_training import CognitiveBrainTrainingAgent
+from agents.cognitive_brain_training import DiseaseStage as CognitiveDiseaseStage
+from agents.cognitive_brain_training import PatientProfile as CognitivePatientProfile
+from agents.cognitive_brain_training.llm_logging import configure_logging as configure_cognitive_logging
+from agents.exercise_motor_coordination_training import ExerciseMotorCoordinationTrainingAgent, MobilityLevel
+from agents.exercise_motor_coordination_training import DiseaseStage as ExerciseDiseaseStage
+from agents.exercise_motor_coordination_training import PatientProfile as ExercisePatientProfile
+from agents.exercise_motor_coordination_training.llm_logging import configure_logging as configure_exercise_logging
 
 load_dotenv()
-configure_logging()
+configure_cognitive_logging()
+configure_exercise_logging()
 
-SCHEDULE_OPTIONS = [
+AGENT_LABELS = {
+    "cognitive": "🧠 Cognitive & Brain Training",
+    "exercise": "🏃 Exercise & Motor Coordination Training",
+}
+
+COGNITIVE_SCHEDULE_OPTIONS = [
     "07:30-08:30 Reality orientation morning check-in",
     "09:30-10:30 Targeted cognitive training",
     "13:00-14:30 Reminiscence & social engagement",
 ]
 
-STAGE_LABELS = {
-    DiseaseStage.MILD: "Mild",
-    DiseaseStage.MODERATE: "Moderate",
-    DiseaseStage.SEVERE: "Severe",
+EXERCISE_SCHEDULE_OPTIONS = [
+    "08:30-09:30 Outdoor aerobic exercise",
+    "15:30-16:30 Light indoor exercise: Dual-Task Training",
+]
+
+STAGE_LABELS = {"mild": "Mild", "moderate": "Moderate", "severe": "Severe"}
+
+MOBILITY_LABELS = {
+    MobilityLevel.INDEPENDENT: "Independent",
+    MobilityLevel.NEEDS_SUPERVISION: "Needs supervision",
+    MobilityLevel.USES_ASSISTIVE_DEVICE: "Uses assistive device",
 }
+
+EXERCISE_TYPE_OPTIONS = ["walking", "tai chi", "baduanjin", "square dancing"]
 
 PROVIDER_LABELS = {
     "ollama": "Ollama (local, llama3.3)",
     "gemini": "Gemini (cloud, needs GOOGLE_API_KEY)",
 }
 
-st.set_page_config(page_title="Cognitive & Brain Training Assistant", page_icon="🧠", layout="centered")
+st.set_page_config(page_title="MemoGo Training Assistant", page_icon="🧩", layout="centered")
 
 st.markdown(
     """
@@ -54,28 +75,37 @@ st.markdown(
 
 
 @st.cache_resource
-def get_agent(provider: str) -> CognitiveBrainTrainingAgent:
+def get_cognitive_agent(provider: str) -> CognitiveBrainTrainingAgent:
     return CognitiveBrainTrainingAgent(provider=provider)
 
 
+@st.cache_resource
+def get_exercise_agent(provider: str) -> ExerciseMotorCoordinationTrainingAgent:
+    return ExerciseMotorCoordinationTrainingAgent(provider=provider)
+
+
+def get_agent(agent_kind: str, provider: str):
+    return get_cognitive_agent(provider) if agent_kind == "cognitive" else get_exercise_agent(provider)
+
+
 def init_state() -> None:
+    st.session_state.setdefault("agent_kind", None)
     st.session_state.setdefault("thread_id", None)
     st.session_state.setdefault("step", None)
     st.session_state.setdefault("prompt_started_at", None)
     st.session_state.setdefault("provider", None)
 
 
-def start_new_session(
-    provider: str, patient: PatientProfile, schedule_activity: str, max_turns: int
-) -> None:
-    agent = get_agent(provider)
+def start_new_session(agent_kind: str, provider: str, patient, schedule_activity: str, max_turns: int, **kwargs) -> None:
+    agent = get_agent(agent_kind, provider)
     try:
         thread_id, step = agent.start_session(
-            patient=patient, schedule_activity=schedule_activity, max_turns=max_turns
+            patient=patient, schedule_activity=schedule_activity, max_turns=max_turns, **kwargs
         )
     except Exception as exc:
         st.error(f"Could not start the session: {exc}")
         return
+    st.session_state["agent_kind"] = agent_kind
     st.session_state["provider"] = provider
     st.session_state["thread_id"] = thread_id
     st.session_state["step"] = step
@@ -83,7 +113,7 @@ def start_new_session(
 
 
 def submit_response(response_text: str) -> bool:
-    agent = get_agent(st.session_state["provider"])
+    agent = get_agent(st.session_state["agent_kind"], st.session_state["provider"])
     latency = time.monotonic() - st.session_state["prompt_started_at"]
     try:
         step = agent.submit_response(st.session_state["thread_id"], response_text, latency)
@@ -96,13 +126,74 @@ def submit_response(response_text: str) -> bool:
 
 
 def reset_session() -> None:
+    st.session_state["agent_kind"] = None
     st.session_state["thread_id"] = None
     st.session_state["step"] = None
     st.session_state["prompt_started_at"] = None
 
 
-def render_sidebar() -> None:
+def _gemini_ready(provider: str) -> bool:
+    if provider == "gemini" and not os.environ.get("GOOGLE_API_KEY"):
+        st.error("Set GOOGLE_API_KEY in the .env file to use Gemini.")
+        return False
+    return True
+
+
+def render_cognitive_fields(name: str, stage_value: str, provider: str) -> None:
+    biography = st.text_area(
+        "Biography",
+        value="Retired schoolteacher, raised three children, loves gardening and opera.",
+    )
+    preferences = st.text_input("Preferences (comma-separated)", value="gardening, classic songs")
+    schedule_activity = st.selectbox("Current schedule activity", options=COGNITIVE_SCHEDULE_OPTIONS, index=1)
+    max_turns = st.slider("Number of turns", min_value=1, max_value=8, value=3)
+
+    if st.button("Start new session", type="primary", use_container_width=True):
+        if _gemini_ready(provider):
+            patient = CognitivePatientProfile(
+                patient_id="gui-patient",
+                name=name,
+                stage=CognitiveDiseaseStage(stage_value),
+                biography=biography,
+                preferences=[p.strip() for p in preferences.split(",") if p.strip()],
+            )
+            start_new_session("cognitive", provider, patient, schedule_activity, max_turns)
+
+
+def render_exercise_fields(name: str, stage_value: str, provider: str) -> None:
+    mobility_label = st.selectbox("Mobility level", options=list(MOBILITY_LABELS.values()), index=0)
+    mobility_level = next(m for m, label in MOBILITY_LABELS.items() if label == mobility_label)
+    limitations = st.text_input("Physical limitations (comma-separated)", value="")
+    preferred_types = st.multiselect(
+        "Preferred exercise types", options=EXERCISE_TYPE_OPTIONS, default=["walking", "tai chi"]
+    )
+    indoor_outdoor = st.selectbox("Indoor/outdoor preference", options=["either", "indoor", "outdoor"], index=0)
+    schedule_activity = st.selectbox("Current schedule activity", options=EXERCISE_SCHEDULE_OPTIONS, index=0)
+    max_turns = st.slider("Number of turns", min_value=1, max_value=6, value=3)
+    target_duration_min = st.slider("Target duration (minutes)", min_value=10, max_value=45, value=30, step=5)
+
+    if st.button("Start new session", type="primary", use_container_width=True):
+        if _gemini_ready(provider):
+            patient = ExercisePatientProfile(
+                patient_id="gui-patient",
+                name=name,
+                stage=ExerciseDiseaseStage(stage_value),
+                mobility_level=mobility_level,
+                physical_limitations=[l.strip() for l in limitations.split(",") if l.strip()],
+                preferred_exercise_types=preferred_types,
+                indoor_outdoor_preference=indoor_outdoor,
+            )
+            start_new_session(
+                "exercise", provider, patient, schedule_activity, max_turns, target_duration_min=target_duration_min
+            )
+
+
+def render_sidebar() -> str:
     with st.sidebar:
+        st.header("Training Category")
+        agent_label = st.selectbox("Agent", options=list(AGENT_LABELS.values()), index=0)
+        agent_kind = next(k for k, label in AGENT_LABELS.items() if label == agent_label)
+
         st.header("LLM Provider")
         provider_label = st.selectbox("Model", options=list(PROVIDER_LABELS.values()), index=0)
         provider = next(p for p, label in PROVIDER_LABELS.items() if label == provider_label)
@@ -110,49 +201,41 @@ def render_sidebar() -> None:
         st.header("Patient Profile")
         name = st.text_input("Name", value="Grandma Chen")
         stage_label = st.selectbox("Disease stage", options=list(STAGE_LABELS.values()), index=0)
-        stage = next(s for s, label in STAGE_LABELS.items() if label == stage_label)
-        biography = st.text_area(
-            "Biography",
-            value="Retired schoolteacher, raised three children, loves gardening and opera.",
-        )
-        preferences = st.text_input("Preferences (comma-separated)", value="gardening, classic songs")
-        schedule_activity = st.selectbox("Current schedule activity", options=SCHEDULE_OPTIONS, index=1)
-        max_turns = st.slider("Number of turns", min_value=1, max_value=8, value=3)
+        stage_value = next(v for v, label in STAGE_LABELS.items() if label == stage_label)
 
-        if st.button("Start new session", type="primary", use_container_width=True):
-            if provider == "gemini" and not os.environ.get("GOOGLE_API_KEY"):
-                st.error("Set GOOGLE_API_KEY in the .env file to use Gemini.")
-            else:
-                patient = PatientProfile(
-                    patient_id="gui-patient",
-                    name=name,
-                    stage=stage,
-                    biography=biography,
-                    preferences=[p.strip() for p in preferences.split(",") if p.strip()],
-                )
-                start_new_session(provider, patient, schedule_activity, max_turns)
+        if agent_kind == "cognitive":
+            render_cognitive_fields(name, stage_value, provider)
+        else:
+            render_exercise_fields(name, stage_value, provider)
+
+    return agent_kind
 
 
 def render_active_turn(prompt: str) -> None:
     st.markdown(f'<div class="big-prompt">{prompt}</div>', unsafe_allow_html=True)
     with st.form("response_form", clear_on_submit=True):
-        response_text = st.text_input("Patient's answer", key="response_input")
-        submitted = st.form_submit_button("Submit answer", type="primary", use_container_width=True)
+        response_text = st.text_input("Patient's / caregiver's response", key="response_input")
+        submitted = st.form_submit_button("Submit response", type="primary", use_container_width=True)
     if submitted and response_text:
         if submit_response(response_text):
             st.rerun()
 
 
 def render_completed_session(step) -> None:
-    st.success("Session complete!")
+    safety_alert = getattr(step, "safety_alert", None)
+    if safety_alert:
+        st.error(f"⚠️ Safety alert: {safety_alert}")
+    else:
+        st.success("Session complete!")
+
     for i, turn in enumerate(step.session_log.turns, start=1):
         with st.container(border=True):
             st.markdown(f"**Turn {i}**")
-            st.write(f"Question: {turn.prompt}")
-            st.write(f"Answer: {turn.patient_response}")
+            st.write(f"Prompt: {turn.prompt}")
+            st.write(f"Response: {turn.patient_response}")
             st.write(f"Feedback: {turn.feedback}")
 
-    if step.caregiver_summary:
+    if not safety_alert and step.caregiver_summary:
         st.subheader("Caregiver summary")
         st.write(step.caregiver_summary)
 
@@ -164,9 +247,9 @@ def render_completed_session(step) -> None:
 def main() -> None:
     init_state()
 
-    st.title("🧠 Cognitive & Brain Training Assistant")
-
-    render_sidebar()
+    selected_kind = render_sidebar()
+    active_kind = st.session_state["agent_kind"] or selected_kind
+    st.title(AGENT_LABELS[active_kind])
 
     step = st.session_state["step"]
     if step is None:
