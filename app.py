@@ -9,6 +9,11 @@ from agents.adl_training import DiseaseStage as ADLDiseaseStage
 from agents.adl_training import MobilityLevel as ADLMobilityLevel
 from agents.adl_training import PatientProfile as ADLPatientProfile
 from agents.adl_training.llm_logging import configure_logging as configure_adl_logging
+from agents.companionship import CompanionshipAgent, RealityDistortionEvent
+from agents.companionship import DiseaseStage as CompanionshipDiseaseStage
+from agents.companionship import PatientProfile as CompanionshipPatientProfile
+from agents.companionship.llm_logging import configure_logging as configure_companionship_logging
+from agents.companionship.models import DistortionType
 from agents.cognitive_brain_training import CognitiveBrainTrainingAgent
 from agents.cognitive_brain_training import DiseaseStage as CognitiveDiseaseStage
 from agents.cognitive_brain_training import PatientProfile as CognitivePatientProfile
@@ -46,6 +51,7 @@ configure_social_logging()
 configure_home_safety_logging()
 configure_daily_life_logging()
 configure_emotional_logging()
+configure_companionship_logging()
 
 AGENT_LABELS = {
     "cognitive": "🧠 Cognitive & Brain Training",
@@ -55,6 +61,7 @@ AGENT_LABELS = {
     "home_safety": "🏠 Home Safety & Protection",
     "daily_life": "📅 Daily Life & Routine Management",
     "emotional_support": "💛 Emotional Support & Comfort",
+    "companionship": "🤝 Companionship",
 }
 
 COGNITIVE_SCHEDULE_OPTIONS = [
@@ -89,6 +96,17 @@ DAILY_LIFE_SCHEDULE_OPTIONS = [
     "16:30-18:00 Relaxation & dinner",
     "19:30-21:30 Bedtime prep & relaxation",
 ]
+
+COMPANIONSHIP_SCHEDULE_OPTIONS = [
+    "13:00-14:30 Reminiscence & social engagement",
+]
+
+DISTORTION_TYPE_LABELS = {
+    DistortionType.WANTS_TO_GO_HOME: "Insisting on going home",
+    DistortionType.MISIDENTIFICATION: "Mistaking someone's identity",
+    DistortionType.ACCUSATION_OR_SUSPICION: "Suspecting theft / missing items",
+    DistortionType.OTHER: "Other memory distortion",
+}
 
 STAGE_LABELS = {"mild": "Mild", "moderate": "Moderate", "severe": "Severe"}
 
@@ -240,6 +258,11 @@ def get_emotional_agent(provider: str) -> EmotionalSupportComfortAgent:
     return EmotionalSupportComfortAgent(provider=provider)
 
 
+@st.cache_resource
+def get_companionship_agent(provider: str) -> CompanionshipAgent:
+    return CompanionshipAgent(provider=provider)
+
+
 def get_agent(agent_kind: str, provider: str):
     if agent_kind == "cognitive":
         return get_cognitive_agent(provider)
@@ -253,6 +276,8 @@ def get_agent(agent_kind: str, provider: str):
         return get_daily_life_agent(provider)
     if agent_kind == "emotional_support":
         return get_emotional_agent(provider)
+    if agent_kind == "companionship":
+        return get_companionship_agent(provider)
     return get_social_agent(provider)
 
 
@@ -301,6 +326,22 @@ def start_deviation_session(agent_kind: str, provider: str, patient, deviation_e
     try:
         thread_id, step = agent.start_deviation_session(
             patient=patient, deviation_event=deviation_event, max_turns=max_turns
+        )
+    except Exception as exc:
+        st.error(f"Could not start the session: {exc}")
+        return
+    st.session_state["agent_kind"] = agent_kind
+    st.session_state["provider"] = provider
+    st.session_state["thread_id"] = thread_id
+    st.session_state["step"] = step
+    st.session_state["prompt_started_at"] = time.monotonic()
+
+
+def start_distortion_session(agent_kind: str, provider: str, patient, distortion_event, max_turns: int) -> None:
+    agent = get_agent(agent_kind, provider)
+    try:
+        thread_id, step = agent.start_distortion_session(
+            patient=patient, distortion_event=distortion_event, max_turns=max_turns
         )
     except Exception as exc:
         st.error(f"Could not start the session: {exc}")
@@ -630,6 +671,57 @@ def render_emotional_fields(name: str, stage_value: str, provider: str) -> None:
                 start_outburst_session("emotional_support", provider, patient, outburst_event, max_turns=max_turns)
 
 
+def render_companionship_fields(name: str, stage_value: str, provider: str) -> None:
+    reminiscence_background = st.text_input(
+        "Reminiscence background (comma-separated)", value="running the family shop, growing up by the coast"
+    )
+    sensitive_topics = st.text_input("Sensitive topics to avoid (comma-separated)", value="losing her husband")
+    caregiver_name = st.text_input("Caregiver name", value="Amy")
+    days_since_last_respite = st.slider("Days since caregiver's last respite", min_value=0, max_value=21, value=5)
+
+    session_type = st.radio(
+        "Session type", options=["Scheduled companionship activity", "Simulate a memory-distortion moment"], index=0
+    )
+
+    if session_type == "Scheduled companionship activity":
+        schedule_activity = st.selectbox("Current schedule activity", options=COMPANIONSHIP_SCHEDULE_OPTIONS, index=0)
+        max_turns = st.slider("Max steps this session", min_value=1, max_value=8, value=8)
+
+        if st.button("Start new session", type="primary", use_container_width=True):
+            if _gemini_ready(provider):
+                patient = CompanionshipPatientProfile(
+                    patient_id="gui-patient",
+                    name=name,
+                    stage=CompanionshipDiseaseStage(stage_value),
+                    reminiscence_background=[t.strip() for t in reminiscence_background.split(",") if t.strip()],
+                    sensitive_topics_to_avoid=[t.strip() for t in sensitive_topics.split(",") if t.strip()],
+                    caregiver_name=caregiver_name,
+                    days_since_last_respite=days_since_last_respite,
+                )
+                start_new_session("companionship", provider, patient, schedule_activity, max_turns)
+    else:
+        distortion_label = st.selectbox("Distortion type", options=list(DISTORTION_TYPE_LABELS.values()), index=0)
+        distortion_type = next(d for d, label in DISTORTION_TYPE_LABELS.items() if label == distortion_label)
+        patient_statement = st.text_input("Patient's statement", value="I need to go home now, where are my shoes?")
+        max_turns = st.slider("Max validate-and-redirect attempts", min_value=1, max_value=5, value=3)
+
+        if st.button("Simulate distortion moment", type="primary", use_container_width=True):
+            if _gemini_ready(provider):
+                patient = CompanionshipPatientProfile(
+                    patient_id="gui-patient",
+                    name=name,
+                    stage=CompanionshipDiseaseStage(stage_value),
+                    reminiscence_background=[t.strip() for t in reminiscence_background.split(",") if t.strip()],
+                    sensitive_topics_to_avoid=[t.strip() for t in sensitive_topics.split(",") if t.strip()],
+                    caregiver_name=caregiver_name,
+                    days_since_last_respite=days_since_last_respite,
+                )
+                distortion_event = RealityDistortionEvent(
+                    distortion_type=distortion_type, patient_statement=patient_statement
+                )
+                start_distortion_session("companionship", provider, patient, distortion_event, max_turns=max_turns)
+
+
 def render_sidebar() -> str:
     with st.sidebar:
         st.header("Training Category")
@@ -657,6 +749,8 @@ def render_sidebar() -> str:
             render_daily_life_fields(name, stage_value, provider)
         elif agent_kind == "emotional_support":
             render_emotional_fields(name, stage_value, provider)
+        elif agent_kind == "companionship":
+            render_companionship_fields(name, stage_value, provider)
         else:
             render_social_fields(name, stage_value, provider)
 
@@ -679,6 +773,7 @@ def render_completed_session(step) -> None:
         or getattr(step, "hazard_alert", None)
         or getattr(step, "urgent_alert", None)
         or getattr(step, "routine_alert", None)
+        or getattr(step, "caregiver_alert", None)
     )
     if alert:
         st.error(f"⚠️ Safety alert: {alert}")

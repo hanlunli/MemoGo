@@ -1,0 +1,176 @@
+{
+  "agentId": "companionship-agent",
+  "agentName": "Companionship AI Agent",
+  "category": "Companionship",
+  "purpose": "Runs the Core Principles of Companionship (Avoid Denial and Correction, Acceptance and Empathy, Preserve Dignity) as a real-time validate-and-redirect coaching script during a reported memory-distortion moment, and separately walks the caregiver through companionship_content.json's stage-adaptive activity list (Early/Middle/Late) for a scheduled companionship block — expanding the Early-stage \"practice Reminiscence Therapy\" activity into the full 4-step Reminiscence Therapy protocol (Topic Selection & Media Prep, Atmosphere & Environment Setup, Heuristic Prompting & Sensory Interaction, Active Listening & Encouragement) instead of treating it as a single turn. Every scheduled session also appends one rotating Caregiver Self-Care nudge (Establish Emotional Boundaries / Seek Respite Services).",
+  "coreModules": [
+    {
+      "id": "stage-adaptive-activity-scheduler",
+      "name": "Stage-Adaptive Activity Scheduler",
+      "description": "Builds the turn-by-turn activity sequence for a scheduled companionship session directly from companionship_content.json's stageBasedCompanionshipStrategies for the patient's current disease stage.",
+      "keyBehaviors": [
+        "Select the Early/Middle/Late stage activity list matching the patient's current stage rather than a single generic activity set",
+        "Tag the Early-stage \"practice Reminiscence Therapy\" activity so the graph expands it into the full 4-step protocol instead of a single coached turn",
+        "Append exactly one Caregiver Self-Care nudge step to the end of every scheduled sequence, regardless of stage",
+        "Never invent an activity outside the source content's stage-specific list"
+      ]
+    },
+    {
+      "id": "reminiscence-therapy-session-engine",
+      "name": "Reminiscence Therapy Session Engine",
+      "description": "Runs the 4-step Reminiscence Therapy protocol from companionship_content.json's reminiscenceTherapyProtocol as its own nested sub-flow inside the Early-stage activity sequence.",
+      "keyBehaviors": [
+        "Personalize the theme and Reminiscence Box (visual/auditory/tactile-olfactory) from the patient's own background instead of a generic default",
+        "Swap immediately to a safe default theme, without probing further, whenever the personalized theme matches a known sensitive/traumatic topic",
+        "Generate Step 3's open-ended question via the Cognitive & Brain Training agent's reminiscence-session-manager capability instead of maintaining a separate question generator, then wrap it with an explicit instruction to the caregiver never to rephrase it into a fact-testing question",
+        "End the sub-flow early, without penalty, the moment a fatigue/waning-attention signal is detected in the caregiver's reply, per the source content's 20-30 minute session-length guidance",
+        "Never let feedback at any step read as a correction of dates, names, or places, even when the caregiver reports an inconsistency"
+      ]
+    },
+    {
+      "id": "distortion-response-coach",
+      "name": "Memory-Distortion Response Coach",
+      "description": "Delivers real-time, non-confrontational validate-and-redirect coaching to the caregiver during a reported memory-distortion moment (mistaken identity, insisting on going home, suspecting theft).",
+      "keyBehaviors": [
+        "Never instruct the caregiver to correct, deny, or argue about the distortion; always lead with validating the emotion behind it",
+        "Classify the distortion type from the reported patient statement (misidentification / wants-to-go-home / accusation-or-suspicion / other) when the caregiver hasn't already tagged it",
+        "Preserve the patient's dignity in every generated step: never speak about the patient as if absent, never use an infantilizing tone",
+        "Escalate to a gentle caregiver note, not a full urgent alert, if the patient has not settled after the attempt budget is exhausted"
+      ]
+    },
+    {
+      "id": "caregiver-self-care-nudge-engine",
+      "name": "Caregiver Self-Care Nudge Engine",
+      "description": "Delivers one Caregiver Self-Care nudge per scheduled session, addressed to the caregiver's own wellbeing rather than the patient's care.",
+      "keyBehaviors": [
+        "Select the Respite Reminder nudge once the caregiver is overdue for a weekly rest window (days-since-last-respite at or past the threshold), otherwise select the Emotional-Boundary-Reframe nudge",
+        "Log nudge acceptance/decline deterministically from the caregiver's reply rather than treating a decline as a failure",
+        "Frame every nudge around the caregiver's own wellbeing, never the patient's"
+      ]
+    },
+    {
+      "id": "engagement-assessment-layers",
+      "name": "Engagement & Validation Assessment Layers",
+      "description": "Produces warm, non-corrective feedback for each activity turn, reminiscence step, and distortion-response attempt.",
+      "keyBehaviors": [
+        "Assess engagement/validation via a structured LLM call for feedback wording only",
+        "Never let the LLM assessment decide whether the graph continues or closes a loop — that routing is always resolved by deterministic keyword/latency checks",
+        "Fall back to a warm static line if the assessment call fails, so a session never stalls on an LLM error"
+      ]
+    },
+    {
+      "id": "caregiver-clinician-reporting",
+      "name": "Caregiver/Clinician Reporting",
+      "description": "Summarizes a completed session or raises a gentle note when a distortion moment stayed unresolved.",
+      "keyBehaviors": [
+        "Generate a 2-3 sentence session summary noting activity/reminiscence engagement, the distortion-response outcome, and whether a self-care nudge was offered",
+        "Raise a distinct, calmer-worded note (not a safety alert) when a distortion moment is not settled after the attempt budget, suggesting a clinician or family member may help",
+        "Never block session close on a reporting failure"
+      ]
+    },
+    {
+      "id": "personalization-profile",
+      "name": "Personalization Profile",
+      "description": "Stores patient- and caregiver-specific context used to tailor stage activities, the Reminiscence Box, and self-care nudges.",
+      "keyBehaviors": [
+        "Store reminiscence background themes (hometown, profession, hobbies) and sensitive/traumatic topics to avoid",
+        "Store physical-contact tolerance for late-stage sensory-engagement activities",
+        "Store caregiver name and days-since-last-respite to drive the self-care nudge selection",
+        "Store current disease-stage setting (shared with Cognitive/Exercise/ADL/Social/Home Safety/Daily Life/Emotional Support agents)"
+      ]
+    },
+    {
+      "id": "scheduler-integration",
+      "name": "Scheduler Integration",
+      "description": "Anchors the scheduled companionship block to the daily schedule while keeping distortion-moment coaching event-driven.",
+      "keyBehaviors": [
+        "Read the companionship/reminiscence time block from the daily schedule to auto-trigger the scheduled activity sequence",
+        "Accept a distortion-moment session at any time, independent of the schedule, since it is reported in the moment",
+        "Report scheduled-block completion status back to the schedule, and log distortion-response sessions as unscheduled entries"
+      ]
+    }
+  ],
+  "sessionLifecycle": [
+    {
+      "step": 1,
+      "name": "Trigger check",
+      "description": "A session opens either because the daily schedule surfaces the companionship/reminiscence time block, or because the caregiver reports a memory-distortion moment."
+    },
+    {
+      "step": 2,
+      "name": "Context load",
+      "description": "Load the personalization profile (stage, reminiscence background, sensitive topics, contact tolerance, caregiver context) needed to build the stage activity sequence or classify the distortion."
+    },
+    {
+      "step": 3,
+      "name": "Activity / reminiscence delivery or distortion coaching",
+      "description": "For a scheduled block, walk the stage activity sequence turn by turn, expanding the Reminiscence Therapy activity into its 4-step sub-flow; for an event-driven session, the distortion-response coach delivers the validate-and-redirect script one attempt at a time."
+    },
+    {
+      "step": 4,
+      "name": "Adaptive action",
+      "description": "Assess engagement/validation after each turn, detect fatigue during the reminiscence sub-flow, and deliver the caregiver self-care nudge as the session's final scheduled step."
+    },
+    {
+      "step": 5,
+      "name": "Escalation / completion",
+      "description": "If a distortion moment is not settled after the attempt budget, raise a gentle caregiver note instead of looping indefinitely; otherwise continue until the stage activity sequence (including any reminiscence sub-flow) completes."
+    },
+    {
+      "step": 6,
+      "name": "Session close",
+      "description": "Log the session outcome (activities completed, reminiscence engagement, distortion outcome, self-care nudge acceptance) and notify the caregiver (routine summary, or the gentle unresolved-distortion note already sent)."
+    }
+  ],
+  "dataModel": [
+    {
+      "entity": "PatientProfile",
+      "fields": ["stage", "biography", "reminiscenceBackground", "sensitiveTopicsToAvoid", "acceptsPhysicalContact", "caregiverName", "daysSinceLastRespite", "knownDistortionPatterns"]
+    },
+    {
+      "entity": "StageActivityStep",
+      "fields": ["stepType", "activityKey", "description"]
+    },
+    {
+      "entity": "ReminiscenceBoxItem",
+      "fields": ["visual", "auditory", "tactileOlfactory"]
+    },
+    {
+      "entity": "RealityDistortionEvent",
+      "fields": ["distortionType", "patientStatement", "description"]
+    },
+    {
+      "entity": "SessionTurn",
+      "fields": ["module", "prompt", "caregiverResponse", "feedback", "itemAddressed"]
+    },
+    {
+      "entity": "SessionLog",
+      "fields": ["module", "triggerType", "activitiesCompleted", "activityStatusCounts", "reminiscenceSessionConducted", "reminiscenceThemeUsed", "selfCareNudgeDelivered", "selfCareNudgeAccepted", "distortionAttempts", "distortionHandled", "endedReason"]
+    },
+    {
+      "entity": "ProgressTrend",
+      "fields": ["domain", "rollingEngagementRate", "rollingReminiscenceSessionCount", "timeframe"]
+    }
+  ],
+  "integration": {
+    "sharedContext": [
+      "Disease-stage setting shared with Cognitive/Exercise/ADL/Social/Home Safety/Daily Life/Emotional Support agents for consistent difficulty and calibration",
+      "Physical-contact tolerance shared with the Emotional Support & Comfort agent's personalization profile rather than tracked twice"
+    ],
+    "crossAgentCalls": [
+      {
+        "caller": "Companionship AI Agent",
+        "capability": "reminiscence-session-manager / generate_prompt",
+        "providerAgent": "Cognitive & Brain Training AI Agent",
+        "usage": "The Reminiscence Therapy Session Engine's Heuristic Prompting step generates its open-ended, emotion-driven question through this shared engine instead of maintaining a separate question generator, matching how the Emotional Support & Comfort agent already reuses it for outburst redirection."
+      }
+    ]
+  },
+  "successMetrics": [
+    "Reminiscence Therapy session completion rate and per-step engagement trend, tracked via SessionLog.reminiscenceSessionConducted",
+    "Distortion validate-and-redirect success rate and mean attempts-to-settle per event",
+    "Caregiver self-care nudge acceptance rate and days-since-last-respite trend (goal: staying under the overdue threshold)",
+    "Stage activity engagement rate (activitiesCompleted vs. offered) as a companionship-engagement signal",
+    "Caregiver-reported confidence in handling memory-distortion moments without correcting or arguing"
+  ]
+}

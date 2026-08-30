@@ -1,0 +1,146 @@
+{
+  "companionshipMethods": {
+    "overview": "For individuals with Alzheimer's disease (AD), progressive cognitive decline often brings profound anxiety, fear, and confusion. The core of companionship lies in replacing correction with adaptation and respect, creating a safe and stable environment for emotional support.",
+    "categories": [
+      {
+        "name": "Core Principles of Companionship",
+        "methods": [
+          {
+            "name": "Avoid Denial and Correction",
+            "description": "Refrain from forcefully correcting or arguing over memory distortions (such as mistaking adult children for parents or suspecting theft when items are misplaced), as this can easily trigger hostility or panic."
+          },
+          {
+            "name": "Acceptance and Empathy",
+            "description": "Validate the patient's current reality and address the emotions behind their behavior rather than taking their words literally. For instance, if they insist on \"going home,\" respond with: \"I know you're missing home right now. Let's sit for a while before we go, alright?\""
+          },
+          {
+            "name": "Preserve Dignity",
+            "description": "Treat the patient as a fully autonomous adult. Avoid using infantilizing tones, and never discuss their condition in front of them as if they are absent."
+          }
+        ]
+      },
+      {
+        "name": "Caregiver Self-Care",
+        "overview": "Long-term caregiving frequently leads to Caregiver Burnout.",
+        "methods": [
+          {
+            "name": "Establish Emotional Boundaries",
+            "description": "Recognize that aggressive language or emotional detachment stems from the disease itself, not personal hostility."
+          },
+          {
+            "name": "Seek Respite Services",
+            "description": "Utilize community day centers, short-term care facilities, or family shift-rotations to ensure caregivers get dedicated weekly rest time."
+          }
+        ]
+      }
+    ],
+    "principles": [
+      "The core of companionship lies in replacing correction with adaptation and respect, creating a safe and stable environment for emotional support.",
+      "Validate the emotion behind a behavior rather than the literal words, and never argue over memory distortions.",
+      "Preserve the patient's dignity and autonomy at every stage; never speak about their condition in front of them as though they are absent."
+    ],
+    "executionGuidelines": [
+      {
+        "name": "Non-Confrontational Validation",
+        "description": "Do not forcefully correct or argue over memory distortions; validate the patient's current reality and the emotion behind their words instead of taking them literally."
+      },
+      {
+        "name": "Dignity-First Interaction",
+        "description": "Treat the patient as a fully autonomous adult: avoid infantilizing tones and never discuss their condition in front of them as if they are absent."
+      },
+      {
+        "name": "Caregiver Boundaries & Respite",
+        "description": "Treat aggressive language or emotional detachment as a symptom of the disease, not personal hostility, and use community day centers, short-term care, or family shift-rotations to secure dedicated weekly rest."
+      }
+    ]
+  },
+  "stageBasedCompanionshipStrategies": [
+    {
+      "stage": "Early Stage (Mild)",
+      "coreManifestations": "Short-term memory loss, occasional mood swings, retains basic independence.",
+      "recommendedStrategies": {
+        "name": "Maintain Socializing & Exercise",
+        "activities": [
+          "Accompany them in low-intensity exercise (walking, jogging, Tai Chi).",
+          "Look through old photo albums, listen to classic songs, and practice Reminiscence Therapy.",
+          "Encourage participation in light chores (folding clothes, sorting vegetables) to maintain a sense of self-worth."
+        ]
+      }
+    },
+    {
+      "stage": "Middle Stage (Moderate)",
+      "coreManifestations": "Disorientation, speech difficulty, behavioral shifts, nighttime wandering.",
+      "recommendedStrategies": {
+        "name": "Simplify Language & Environment",
+        "activities": [
+          "Use short, simple sentences with a slow pace, supplemented by gestures and eye contact.",
+          "Establish a predictable daily routine; label essential items with large-font text and icon cues.",
+          "Offer simple tactile activities (hand squeezes, light massages, simple puzzles, or modeling clay)."
+        ]
+      }
+    },
+    {
+      "stage": "Late Stage (Severe)",
+      "coreManifestations": "Loss of speech, bedridden, unable to recognize loved ones.",
+      "recommendedStrategies": {
+        "name": "Sensory Engagement & Dignity Care",
+        "activities": [
+          "Focus on non-verbal communication: hand-holding, back-stroking, and playing familiar music or white noise.",
+          "Maintain proper grooming and hygiene; use warm physical contact to provide a reassuring sense of safety."
+        ]
+      }
+    }
+  ],
+  "reminiscenceTherapyProtocol": {
+    "purpose": "A non-pharmacological intervention that guides individuals with Alzheimer's disease to recall past life experiences, significant events, and emotions to stimulate long-term memory, boost mood, and enhance self-worth. Because distant memories usually remain relatively intact while short-term memory declines significantly, this therapy allows patients to regain a sense of control and confidence in the familiarity of their past.",
+    "implementationSteps": [
+      {
+        "step": 1,
+        "name": "Topic Selection & Media Preparation",
+        "description": "Select a theme focused on areas most familiar, proud, or comforting from the patient's youth—such as childhood games, wedding celebrations, a first job, hometown traditions, or holiday customs. Assemble a multisensory \"Reminiscence Box\".",
+        "reminiscenceBox": {
+          "visual": "Old photos, newspapers, marriage certificates, awards, or vintage household items (e.g., sewing machine parts, antique radios).",
+          "auditory": "Hit songs from their youth, opera excerpts, hometown dialect broadcasts, or nature sounds.",
+          "tactileOlfactory": "Retro fabrics, vintage perfumes, floral waters, or familiar spices and teas."
+        }
+      },
+      {
+        "step": 2,
+        "name": "Atmosphere & Environment Setup",
+        "description": "Choose a quiet, softly lit space free of background noise to keep the patient calm. Sit close and maintain eye level with the patient, offering full attention and patience."
+      },
+      {
+        "step": 3,
+        "name": "Heuristic Prompting & Sensory Interaction",
+        "description": "Present an old object or play a song first, giving the patient ample time to touch, look, or listen. Initiate conversation using non-pressuring, open-ended prompts focused on feelings rather than testing facts.",
+        "promptGuidance": {
+          "avoid": "High-pressure, fact-testing questions, e.g. \"Do you remember what year this photo was taken? Who is standing next to you?\"",
+          "recommended": "Emotion-driven prompts, e.g. \"This photo looks so lively! Was everyone having fun back then?\" or \"What does this song bring to mind?\""
+        }
+      },
+      {
+        "step": 4,
+        "name": "Active Listening & Encouragement",
+        "description": "Express interest and approval regardless of whether the story is coherent or logically sound. Validate their narrative through head nods, eye contact, or a gentle hand squeeze, occasionally repeating key terms to encourage further sharing."
+      }
+    ],
+    "keyConsiderations": [
+      {
+        "name": "Avoid Traumatic or Sensitive Topics",
+        "description": "If a subject or object triggers sadness, anxiety, or agitation (e.g., war, hardship, loss of loved ones), gently shift the focus immediately—never probe further."
+      },
+      {
+        "name": "Prioritize Emotional Connection Over Factual Accuracy",
+        "description": "Patients may confuse dates, places, or names. Never interrupt or correct them directly (e.g., avoid saying \"You're wrong, that wasn't in Shanghai\"); simply flow with their narrative context."
+      },
+      {
+        "name": "Limit Session Duration",
+        "description": "Reminiscence can be mentally taxing. Keep individual sessions to 20–30 minutes, and end earlier if the patient shows signs of fatigue or waning attention."
+      },
+      {
+        "name": "Personalize the Approach",
+        "description": "Tailor the materials to the patient's specific background (profession, hobbies, hometown) and avoid using completely unfamiliar themes."
+      }
+    ]
+  }
+}
